@@ -10,7 +10,6 @@ const DEFAULT_DATA = {
     theme: 'teal',
     reminder: true,
     streak30: true,
-    celebrations: false,
     categories: ['bien-être', 'sport', 'développement', 'santé', 'technique', 'créativité']
   }
 };

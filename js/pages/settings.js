@@ -56,13 +56,6 @@ export function render(container) {
           </div>
           <button class="toggle-switch${settings.streak30 ? ' on' : ''}" data-pref="streak30" role="switch" aria-checked="${!!settings.streak30}"></button>
         </div>
-        <div class="toggle-row">
-          <div>
-            <div class="toggle-label">Célébrations</div>
-            <div class="toggle-desc">Animation quand tu atteins un palier</div>
-          </div>
-          <button class="toggle-switch${settings.celebrations ? ' on' : ''}" data-pref="celebrations" role="switch" aria-checked="${!!settings.celebrations}"></button>
-        </div>
       </div>
 
       <div class="settings-section">
@@ -140,11 +133,26 @@ export function render(container) {
 
   // --- Toggle switches ---
   container.querySelectorAll('.toggle-switch').forEach(toggle => {
-    toggle.addEventListener('click', () => {
+    toggle.addEventListener('click', async () => {
+      const pref = toggle.dataset.pref;
+
+      if (pref === 'reminder' && !toggle.classList.contains('on')) {
+        if ('Notification' in window) {
+          const perm = await Notification.requestPermission();
+          if (perm !== 'granted') {
+            showToast('Permission de notification refusée');
+            return;
+          }
+        } else {
+          showToast('Les notifications ne sont pas supportées par ce navigateur');
+          return;
+        }
+      }
+
       toggle.classList.toggle('on');
       const isOn = toggle.classList.contains('on');
       toggle.setAttribute('aria-checked', String(isOn));
-      updateSettings({ [toggle.dataset.pref]: isOn });
+      updateSettings({ [pref]: isOn });
     });
   });
 
