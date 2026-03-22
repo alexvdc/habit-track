@@ -95,11 +95,25 @@ export function render(container, weekOffset = 0) {
   // Form submit
   container.querySelector('#weekly-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    const whatWorked = document.getElementById('w-worked').value.trim();
-    const whatBlocked = document.getElementById('w-blocked').value.trim();
-    const nextSteps = document.getElementById('w-next').value.trim();
+    const workedEl = document.getElementById('w-worked');
+    const blockedEl = document.getElementById('w-blocked');
+    const nextEl = document.getElementById('w-next');
+    const whatWorked = workedEl.value.trim();
+    const whatBlocked = blockedEl.value.trim();
+    const nextSteps = nextEl.value.trim();
 
-    if (!whatWorked && !whatBlocked && !nextSteps) return;
+    // Clear previous errors
+    container.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
+    container.querySelectorAll('.error-msg').forEach(el => el.remove());
+
+    if (!whatWorked && !whatBlocked && !nextSteps) {
+      [workedEl, blockedEl, nextEl].forEach(el => el.classList.add('field-error'));
+      const msg = document.createElement('div');
+      msg.className = 'error-msg';
+      msg.textContent = 'Remplis au moins un champ pour enregistrer ta réflexion.';
+      container.querySelector('.form-foot').insertAdjacentElement('beforebegin', msg);
+      return;
+    }
 
     if (current) {
       updateReflection(current.id, { whatWorked, whatBlocked, nextSteps });
