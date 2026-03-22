@@ -21,6 +21,12 @@ export function barChart(data, opts = {}) {
   const gap = 4;
   const barW = Math.max((chartW / data.length) - gap, 4);
 
+  // Accessibility summary
+  const totalCheckins = data.reduce((sum, d) => sum + d.count, 0);
+  const avgCheckins = data.length > 0 ? (totalCheckins / data.length).toFixed(1) : 0;
+  const todayData = data.find(d => d.date === todayDate);
+  const summaryText = `Graphique des check-ins sur ${data.length} jours. Total : ${totalCheckins} check-ins, moyenne : ${avgCheckins} par jour${todayData ? `, aujourd'hui : ${todayData.count}` : ''}.`;
+
   // Grid lines
   let gridLines = '';
   for (let v = 0; v <= maxCount; v++) {
@@ -64,7 +70,8 @@ export function barChart(data, opts = {}) {
 
   return `
     <div class="chart-wrap">
-      <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">
+      <p class="sr-only">${summaryText}</p>
+      <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         ${gridLines}
         ${axisLine}
         ${bars}

@@ -1,9 +1,10 @@
 // js/pages/board.js — Board with zones, search, filters, modal
 
-import { getHabitsByZone, addHabit, updateHabit, getCategories } from '../store.js';
+import { getHabitsByZone, addHabit, updateHabit, getCategories, moveHabit, loadData } from '../store.js';
 import { createHabitCard } from '../components/habit-card.js';
 import { icon } from '../components/icons.js';
 import { showModal } from '../components/modal.js';
+import { showToast } from '../components/toast.js';
 
 const ZONES = [
   { id: 'past',    label: 'Passé',   sub: 'Habitudes laissées derrière', iconName: 'rotate',  emptyIcon: 'shield', emptyMsg: 'Les habitudes conquises apparaîtront ici' },
@@ -26,12 +27,16 @@ export function render(container) {
     <div class="board-toolbar">
       <div class="search-wrap">
         ${icon('search')}
-        <input type="text" class="search-input" id="board-search" placeholder="Rechercher une habitude..." autocomplete="off">
+        <input type="text" class="search-input" id="board-search" placeholder="Rechercher une habitude..." autocomplete="off" aria-label="Rechercher une habitude">
       </div>
-      <div class="filter-chips" id="filter-chips">
-        <button class="filter-chip active" data-cat="all">Tout</button>
-        ${categories.map(c => `<button class="filter-chip" data-cat="${c}">${c}</button>`).join('')}
+      <div class="filter-chips" id="filter-chips" role="radiogroup" aria-label="Filtrer par catégorie">
+        <button class="filter-chip active" data-cat="all" role="radio" aria-checked="true">Tout</button>
+        ${categories.map(c => `<button class="filter-chip" data-cat="${c}" role="radio" aria-checked="false">${c}</button>`).join('')}
       </div>
+      <select class="filter-select" id="filter-select">
+        <option value="all">Toutes les catégories</option>
+        ${categories.map(c => `<option value="${c}">${c}</option>`).join('')}
+      </select>
     </div>
     <div class="board">
       ${ZONES.map(z => `
@@ -45,6 +50,7 @@ export function render(container) {
             <span class="zone-count" data-zone-count="${z.id}">0</span>
           </div>
           <div class="board-cards" data-zone="${z.id}"></div>
+          <div class="drop-indicator">Déposer ici</div>
           <button class="zone-add" data-zone="${z.id}">
             ${icon('plus', 'i-sm')} Ajouter
           </button>
@@ -85,9 +91,9 @@ export function render(container) {
             <p>${msg}</p>
           </div>`;
       } else {
-        for (const habit of habits) {
-          cardsEl.appendChild(createHabitCard(habit, () => render(container)));
-        }
+        habits.forEach((habit, i) => {
+          cardsEl.appendChild(createHabitCard(habit, () => render(container), i));
+        });
       }
     }
   }
@@ -103,10 +109,65 @@ export function render(container) {
   container.querySelector('#filter-chips').addEventListener('click', (e) => {
     const chip = e.target.closest('.filter-chip');
     if (!chip) return;
-    container.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    container.querySelectorAll('.filter-chip').forEach(c => {
+      c.classList.remove('active');
+      c.setAttribute('aria-checked', 'false');
+    });
     chip.classList.add('active');
+    chip.setAttribute('aria-checked', 'true');
     activeCategory = chip.dataset.cat;
     refresh();
+  });
+
+  // Mobile filter select
+  const filterSelect = container.querySelector('#filter-select');
+  filterSelect.addEventListener('change', () => {
+    activeCategory = filterSelect.value;
+    container.querySelectorAll('.filter-chip').forEach(c => {
+      c.classList.remove('active');
+      c.setAttribute('aria-checked', 'false');
+    });
+    const matchChip = container.querySelector(`.filter-chip[data-cat="${activeCategory}"]`);
+    if (matchChip) {
+      matchChip.classList.add('active');
+      matchChip.setAttribute('aria-checked', 'true');
+    }
+    refresh();
+  });
+
+  // Drag & drop
+  container.querySelectorAll('.zone').forEach(zoneEl => {
+    const zoneId = zoneEl.querySelector('.board-cards').dataset.zone;
+
+    zoneEl.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      zoneEl.classList.add('drag-over');
+    });
+
+    zoneEl.addEventListener('dragleave', (e) => {
+      if (!zoneEl.contains(e.relatedTarget)) {
+        zoneEl.classList.remove('drag-over');
+      }
+    });
+
+    zoneEl.addEventListener('drop', (e) => {
+      e.preventDefault();
+      zoneEl.classList.remove('drag-over');
+      const habitId = e.dataTransfer.getData('text/plain');
+      if (habitId) {
+        const habit = loadData().habits.find(h => h.id === habitId);
+        if (habit && habit.zone !== zoneId) {
+          const oldZone = habit.zone;
+          const zoneLabel = ZONES.find(z => z.id === zoneId)?.label || zoneId;
+          moveHabit(habitId, zoneId);
+          showToast(`${habit.title} déplacé vers ${zoneLabel}`, {
+            undo: () => { moveHabit(habitId, oldZone); refresh(); }
+          });
+          refresh();
+        }
+      }
+    });
   });
 
   // Add buttons

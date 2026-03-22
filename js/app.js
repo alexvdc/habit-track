@@ -30,6 +30,9 @@ function navigate() {
   renderNav(sidebarEl);
   const loader = routes[hash];
   if (loader) {
+    appEl.classList.remove('page-enter');
+    void appEl.offsetWidth;
+    appEl.classList.add('page-enter');
     loader();
   } else {
     appEl.innerHTML = '<div class="page-header"><h1>Page introuvable</h1></div>';

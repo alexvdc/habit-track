@@ -7,6 +7,7 @@ import { showToast } from './toast.js';
 import { showModal } from './modal.js';
 
 const ZONES = ['past', 'present', 'future'];
+const ZONE_LABELS = { past: 'Passé', present: 'Présent', future: 'Futur' };
 const STREAK_TARGET = 30;
 
 /**
@@ -15,10 +16,21 @@ const STREAK_TARGET = 30;
  * @param {Function} onUpdate - called after any data mutation
  * @returns {HTMLElement}
  */
-export function createHabitCard(habit, onUpdate) {
+export function createHabitCard(habit, onUpdate, index = 0) {
   const card = document.createElement('div');
   card.className = `habit-card habit-card--${habit.zone}`;
   card.dataset.id = habit.id;
+  card.setAttribute('draggable', 'true');
+  card.addEventListener('dragstart', (e) => {
+    card.classList.add('dragging');
+    e.dataTransfer.setData('text/plain', habit.id);
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  card.addEventListener('dragend', () => {
+    card.classList.remove('dragging');
+  });
+  card.classList.add('card-stagger');
+  card.style.animationDelay = `${index * 50}ms`;
 
   const isChecked = habit.checkIns.includes(todayISO());
   const zoneIdx = ZONES.indexOf(habit.zone);
@@ -30,10 +42,11 @@ export function createHabitCard(habit, onUpdate) {
   if (habit.zone === 'present') {
     const streak = getCurrentStreak(habit);
     const pct = Math.min(Math.round((streak / STREAK_TARGET) * 100), 100);
+    const isMilestone = [7, 14, 21, 30].includes(streak);
     bodyHTML = `
       <div class="streak-row">
         <span class="streak-label">${streak > 0 ? icon('bolt', 'i-sm') : ''}${streak}j</span>
-        <div class="streak-track"><div class="streak-fill" style="width:${pct}%"></div></div>
+        <div class="streak-track"><div class="streak-fill${isMilestone ? ' milestone' : ''}" style="width:${pct}%"></div></div>
         <span class="streak-target">${STREAK_TARGET}j</span>
         <button class="check-ring ${isChecked ? 'done' : ''}" data-action="toggle" aria-label="${isChecked ? 'Décocher' : 'Valider'}">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${isChecked ? '3' : '2'}" stroke-linecap="round" stroke-linejoin="round">
@@ -56,10 +69,17 @@ export function createHabitCard(habit, onUpdate) {
 
   // --- Action buttons ---
   let actionsHTML = '';
-  if (canLeft) actionsHTML += `<button class="card-btn" data-action="move-left" aria-label="Déplacer vers ${ZONES[zoneIdx - 1]}">${icon('arrowLeft', 'i-sm')}</button>`;
-  if (canRight) actionsHTML += `<button class="card-btn" data-action="move-right" aria-label="Déplacer vers ${ZONES[zoneIdx + 1]}">${icon('arrowRight', 'i-sm')}</button>`;
+  if (canLeft) actionsHTML += `<button class="card-btn" data-action="move-left" aria-label="Déplacer vers ${ZONE_LABELS[ZONES[zoneIdx - 1]]}">${icon('arrowLeft', 'i-sm')}</button>`;
+  if (canRight) actionsHTML += `<button class="card-btn" data-action="move-right" aria-label="Déplacer vers ${ZONE_LABELS[ZONES[zoneIdx + 1]]}">${icon('arrowRight', 'i-sm')}</button>`;
   actionsHTML += `<button class="card-btn" data-action="edit" aria-label="Modifier">${icon('edit', 'i-sm')}</button>`;
   actionsHTML += `<button class="card-btn card-btn--del" data-action="delete" aria-label="Supprimer">${icon('trash', 'i-sm')}</button>`;
+
+  // --- Mobile menu items ---
+  let menuHTML = '';
+  if (canLeft) menuHTML += `<button class="card-menu-item" data-action="move-left" role="menuitem">${icon('chevronUp', 'i-sm')} ${ZONE_LABELS[ZONES[zoneIdx - 1]]}</button>`;
+  if (canRight) menuHTML += `<button class="card-menu-item" data-action="move-right" role="menuitem">${icon('chevronDown', 'i-sm')} ${ZONE_LABELS[ZONES[zoneIdx + 1]]}</button>`;
+  menuHTML += `<button class="card-menu-item" data-action="edit" role="menuitem">${icon('edit', 'i-sm')} Modifier</button>`;
+  menuHTML += `<button class="card-menu-item card-menu-item--del" data-action="delete" role="menuitem">${icon('trash', 'i-sm')} Supprimer</button>`;
 
   card.innerHTML = `
     <div class="card-top">
@@ -67,9 +87,11 @@ export function createHabitCard(habit, onUpdate) {
       <span class="card-title">${escapeHTML(habit.title)}</span>
       ${habit.category ? `<span class="card-cat">${escapeHTML(habit.category)}</span>` : ''}
       ${habit.notes ? `<span class="card-note-indicator" title="Contient des notes">${icon('note', 'i-sm')}</span>` : ''}
+      <button class="card-menu-btn" data-action="menu" aria-label="Actions" aria-haspopup="true" aria-expanded="false">${icon('moreVertical', 'i-sm')}</button>
     </div>
     <div class="card-body">${bodyHTML}</div>
     <div class="card-actions">${actionsHTML}</div>
+    <div class="card-menu" role="menu">${menuHTML}</div>
   `;
 
   // --- Event delegation ---
@@ -78,9 +100,60 @@ export function createHabitCard(habit, onUpdate) {
     if (!btn) return;
     const action = btn.dataset.action;
 
-    if (action === 'toggle') {
+    if (action === 'menu') {
+      const menu = card.querySelector('.card-menu');
+      const isOpen = menu.classList.toggle('open');
+      btn.setAttribute('aria-expanded', String(isOpen));
+      if (isOpen) {
+        // Focus first menu item
+        const items = menu.querySelectorAll('.card-menu-item');
+        if (items.length) items[0].focus();
+
+        const closeMenu = () => {
+          menu.classList.remove('open');
+          btn.setAttribute('aria-expanded', 'false');
+          document.removeEventListener('click', handleOutsideClick, true);
+          menu.removeEventListener('keydown', handleMenuKeys);
+          btn.focus();
+        };
+
+        const handleOutsideClick = (ev) => {
+          if (!menu.contains(ev.target) && ev.target !== btn) {
+            closeMenu();
+          }
+        };
+
+        const handleMenuKeys = (ev) => {
+          if (ev.key === 'Escape') {
+            ev.stopPropagation();
+            closeMenu();
+          } else if (ev.key === 'ArrowDown') {
+            ev.preventDefault();
+            const focused = menu.querySelector('.card-menu-item:focus');
+            if (focused && focused.nextElementSibling) focused.nextElementSibling.focus();
+          } else if (ev.key === 'ArrowUp') {
+            ev.preventDefault();
+            const focused = menu.querySelector('.card-menu-item:focus');
+            if (focused && focused.previousElementSibling) focused.previousElementSibling.focus();
+          } else if (ev.key === 'Tab') {
+            ev.preventDefault();
+            closeMenu();
+          }
+        };
+
+        menu.addEventListener('keydown', handleMenuKeys);
+        setTimeout(() => document.addEventListener('click', handleOutsideClick, true), 0);
+      }
+      return;
+    } else if (action === 'toggle') {
       const wasChecked = habit.checkIns.includes(todayISO());
       toggleCheckIn(habit.id);
+      const ring = card.querySelector('.check-ring');
+      if (ring) {
+        ring.classList.remove('bounce');
+        void ring.offsetWidth;
+        ring.classList.add('bounce');
+      }
       const label = wasChecked ? 'annulé' : 'validé';
       showToast(`${habit.title} — ${label} pour le ${formatDateFR(todayISO(), { noYear: true })}`, {
         undo: () => { toggleCheckIn(habit.id); onUpdate(); }
@@ -89,14 +162,14 @@ export function createHabitCard(habit, onUpdate) {
     } else if (action === 'move-left') {
       const newZone = ZONES[zoneIdx - 1];
       moveHabit(habit.id, newZone);
-      showToast(`${habit.title} déplacé vers ${newZone}`, {
+      showToast(`${habit.title} déplacé vers ${ZONE_LABELS[newZone]}`, {
         undo: () => { moveHabit(habit.id, habit.zone); onUpdate(); }
       });
       onUpdate();
     } else if (action === 'move-right') {
       const newZone = ZONES[zoneIdx + 1];
       moveHabit(habit.id, newZone);
-      showToast(`${habit.title} déplacé vers ${newZone}`, {
+      showToast(`${habit.title} déplacé vers ${ZONE_LABELS[newZone]}`, {
         undo: () => { moveHabit(habit.id, habit.zone); onUpdate(); }
       });
       onUpdate();

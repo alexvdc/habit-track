@@ -15,6 +15,8 @@ export function showModal(options) {
   return new Promise((resolve) => {
     const { title, fields = [], message, confirmLabel = 'Confirmer', cancelLabel = 'Annuler', danger = false } = options;
 
+    const previouslyFocused = document.activeElement;
+
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.setAttribute('role', 'dialog');
@@ -61,8 +63,25 @@ export function showModal(options) {
     const firstInput = form.querySelector('input, select, textarea');
     if (firstInput) firstInput.focus();
 
+    // Focus trap: keep Tab within the modal
+    overlay.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        const focusable = overlay.querySelectorAll('input, select, textarea, button, [tabindex]:not([tabindex="-1"])');
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+        } else {
+          if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+      }
+    });
+
     function close(result) {
       overlay.remove();
+      if (previouslyFocused && previouslyFocused.focus) {
+        previouslyFocused.focus();
+      }
       resolve(result);
     }
 
@@ -76,6 +95,29 @@ export function showModal(options) {
 
     form.addEventListener('submit', (e) => {
       e.preventDefault();
+
+      // Clear previous validation errors
+      overlay.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
+      overlay.querySelectorAll('.error-msg').forEach(el => el.remove());
+
+      // Validate required fields
+      let hasError = false;
+      for (const f of fields) {
+        if (f.required) {
+          const el = form.elements[f.name];
+          if (el && !el.value.trim()) {
+            el.classList.add('field-error');
+            const msg = document.createElement('div');
+            msg.className = 'error-msg';
+            msg.textContent = 'Ce champ est requis';
+            el.parentElement.appendChild(msg);
+            if (!hasError) el.focus();
+            hasError = true;
+          }
+        }
+      }
+      if (hasError) return;
+
       if (fields.length === 0) {
         close({});
         return;

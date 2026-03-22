@@ -130,4 +130,31 @@ export function render(container) {
       </div>
     </div>
   `;
+
+  // Animate stat counters
+  container.querySelectorAll('.stat-val').forEach(el => {
+    const text = el.textContent;
+    const match = text.match(/^(\d+)/);
+    if (!match) return;
+    const target = parseInt(match[1], 10);
+    const suffix = text.replace(/^\d+/, '');
+    if (target === 0) return;
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return;
+
+    let current = 0;
+    const duration = 600;
+    const start = performance.now();
+
+    function tick(now) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - (1 - progress) * (1 - progress);
+      current = Math.round(eased * target);
+      el.textContent = current + suffix;
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
 }
