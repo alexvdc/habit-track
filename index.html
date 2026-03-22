@@ -6,13 +6,31 @@
   <title>HabitTrack</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    // Apply theme before first paint to prevent flash
+    (function() {
+      try {
+        var raw = localStorage.getItem('habittrack_data');
+        if (raw) {
+          var d = JSON.parse(raw);
+          var t = d.settings && d.settings.theme;
+          if (t && t !== 'teal') document.documentElement.setAttribute('data-theme', t);
+        } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      } catch(e) {}
+    })();
+  </script>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-  <div id="root">
-    <nav id="nav"></nav>
+  <aside class="sidebar" id="sidebar"></aside>
+  <nav class="bottom-nav" id="bottom-nav" aria-label="Navigation mobile"></nav>
+  <div class="main-wrap">
     <main id="app"></main>
   </div>
+  <div class="toast-container" id="toast-container"></div>
   <script type="module" src="js/app.js"></script>
 </body>
 </html>
