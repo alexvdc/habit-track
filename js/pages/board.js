@@ -1,6 +1,6 @@
-// js/pages/board.js — Board with zones, search, filters, modal
+// js/pages/board.js — Board with zones, search, filters, modal, drag reorder
 
-import { getHabitsByZone, addHabit, updateHabit, getCategories, moveHabit, loadData } from '../store.js';
+import { getHabitsByZone, addHabit, updateHabit, getCategories, moveHabit, reorderHabit, loadData } from '../store.js';
 import { createHabitCard } from '../components/habit-card.js';
 import { icon } from '../components/icons.js';
 import { showModal } from '../components/modal.js';
@@ -135,39 +135,92 @@ export function render(container) {
     refresh();
   });
 
-  // Drag & drop
+  // Drag & drop (cross-zone move + intra-zone reorder)
   container.querySelectorAll('.zone').forEach(zoneEl => {
-    const zoneId = zoneEl.querySelector('.board-cards').dataset.zone;
+    const cardsEl = zoneEl.querySelector('.board-cards');
+    const zoneId = cardsEl.dataset.zone;
 
     zoneEl.addEventListener('dragover', (e) => {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
       zoneEl.classList.add('drag-over');
+
+      // Show reorder indicator between cards
+      const cards = [...cardsEl.querySelectorAll('.habit-card:not(.dragging)')];
+      const afterCard = _getDragAfterElement(cardsEl, e.clientY);
+      const indicator = cardsEl.querySelector('.reorder-line');
+      if (indicator) indicator.remove();
+
+      // Only show reorder line for same-zone drags
+      const dragId = _currentDragId;
+      if (dragId) {
+        const habit = loadData().habits.find(h => h.id === dragId);
+        if (habit && habit.zone === zoneId && cards.length > 0) {
+          const line = document.createElement('div');
+          line.className = 'reorder-line';
+          if (afterCard) {
+            cardsEl.insertBefore(line, afterCard);
+          } else {
+            cardsEl.appendChild(line);
+          }
+        }
+      }
     });
 
     zoneEl.addEventListener('dragleave', (e) => {
       if (!zoneEl.contains(e.relatedTarget)) {
         zoneEl.classList.remove('drag-over');
+        const indicator = cardsEl.querySelector('.reorder-line');
+        if (indicator) indicator.remove();
       }
     });
 
     zoneEl.addEventListener('drop', (e) => {
       e.preventDefault();
       zoneEl.classList.remove('drag-over');
+      const indicator = cardsEl.querySelector('.reorder-line');
+      if (indicator) indicator.remove();
+
       const habitId = e.dataTransfer.getData('text/plain');
-      if (habitId) {
-        const habit = loadData().habits.find(h => h.id === habitId);
-        if (habit && habit.zone !== zoneId) {
-          const oldZone = habit.zone;
-          const zoneLabel = ZONES.find(z => z.id === zoneId)?.label || zoneId;
-          moveHabit(habitId, zoneId);
-          showToast(`${habit.title} déplacé vers ${zoneLabel}`, {
-            undo: () => { moveHabit(habitId, oldZone); refresh(); }
-          });
-          refresh();
+      if (!habitId) return;
+
+      const habit = loadData().habits.find(h => h.id === habitId);
+      if (!habit) return;
+
+      if (habit.zone === zoneId) {
+        // Intra-zone reorder
+        const cards = [...cardsEl.querySelectorAll('.habit-card:not(.dragging)')];
+        const afterCard = _getDragAfterElement(cardsEl, e.clientY);
+        let newIndex;
+        if (!afterCard) {
+          newIndex = cards.length;
+        } else {
+          newIndex = cards.indexOf(afterCard);
         }
+        reorderHabit(habitId, newIndex);
+        refresh();
+      } else {
+        // Cross-zone move
+        const oldZone = habit.zone;
+        const zoneLabel = ZONES.find(z => z.id === zoneId)?.label || zoneId;
+        moveHabit(habitId, zoneId);
+        showToast(`${habit.title} déplacé vers ${zoneLabel}`, {
+          undo: () => { moveHabit(habitId, oldZone); refresh(); }
+        });
+        refresh();
       }
     });
+  });
+
+  // Track current drag id for same-zone detection
+  let _currentDragId = null;
+  container.addEventListener('dragstart', (e) => {
+    const card = e.target.closest('.habit-card');
+    if (card) _currentDragId = card.dataset.id;
+  });
+  container.addEventListener('dragend', () => {
+    _currentDragId = null;
+    container.querySelectorAll('.reorder-line').forEach(el => el.remove());
   });
 
   // Add buttons
@@ -177,6 +230,7 @@ export function render(container) {
       const fields = [
         { name: 'title', label: 'Nom de l\'habitude', type: 'text', required: true, placeholder: 'Ex : Méditer 10 min' },
         { name: 'category', label: 'Catégorie', type: 'select', options: getCategories() },
+        { name: 'frequency', label: 'Fréquence', type: 'frequency', value: { type: 'daily' } },
       ];
 
       if (zone === 'future') {
@@ -192,7 +246,7 @@ export function render(container) {
       });
 
       if (result && result.title) {
-        const habit = addHabit(result.title, zone, result.category || '', result.targetDate || null);
+        const habit = addHabit(result.title, zone, result.category || '', result.targetDate || null, result.frequency || null);
         if (result.movedAt) {
           updateHabit(habit.id, { movedAt: result.movedAt });
         }
@@ -202,4 +256,16 @@ export function render(container) {
   });
 
   refresh();
+}
+
+function _getDragAfterElement(container, y) {
+  const cards = [...container.querySelectorAll('.habit-card:not(.dragging)')];
+  return cards.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) {
+      return { offset, element: child };
+    }
+    return closest;
+  }, { offset: Number.NEGATIVE_INFINITY }).element || null;
 }

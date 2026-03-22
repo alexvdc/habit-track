@@ -1,6 +1,6 @@
 // js/pages/dashboard.js — V2 Dashboard with stat cards, chart, progress, tips
 
-import { getStats, getHabitsByZone, getCurrentStreak, todayISO } from '../store.js';
+import { getStats, getHabitsByZone, getCurrentStreak, getWeeklyProgress, todayISO } from '../store.js';
 import { barChart } from '../components/chart.js';
 import { icon } from '../components/icons.js';
 import { escapeHTML, formatDateFR } from '../utils.js';
@@ -20,12 +20,18 @@ export function render(container) {
   const progressHTML = present.map(h => {
     const streak = getCurrentStreak(h);
     const pct = Math.min(Math.round((streak / STREAK_TARGET) * 100), 100);
+    const freq = h.frequency || { type: 'daily' };
+    let freqDetail = '';
+    if (freq.type !== 'daily') {
+      const wp = getWeeklyProgress(h);
+      freqDetail = ` · ${wp.done}/${wp.target} sem.`;
+    }
     return `
       <li class="hp-item">
         <div class="hp-dot"></div>
         <div class="hp-info">
           <div class="hp-name">${escapeHTML(h.title)}</div>
-          <div class="hp-detail">${streak} jour${streak !== 1 ? 's' : ''} sur ${STREAK_TARGET}</div>
+          <div class="hp-detail">${streak} jour${streak !== 1 ? 's' : ''} sur ${STREAK_TARGET}${freqDetail}</div>
           <div class="hp-bar"><div class="hp-fill" style="width:${pct}%"></div></div>
         </div>
         <span class="hp-pct">${pct}%</span>

@@ -48,3 +48,8 @@ window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   window.__pwaInstallPrompt = e;
 });
+
+// Init notifications if enabled
+import('./components/notifications.js').then(({ initNotifications }) => {
+  initNotifications();
+});

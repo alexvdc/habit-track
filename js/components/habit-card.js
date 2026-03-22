@@ -1,10 +1,12 @@
 // js/components/habit-card.js — V2 habit card with dots, streak bars, check rings
 
-import { toggleCheckIn, moveHabit, deleteHabit, updateHabit, getCurrentStreak, getDaysSince, todayISO, loadData, saveData, getCategories } from '../store.js';
-import { escapeHTML, formatDateFR } from '../utils.js';
+import { toggleCheckIn, moveHabit, deleteHabit, updateHabit, getCurrentStreak, getDaysSince, todayISO, loadData, saveData, getCategories, getScheduledToday, getWeeklyProgress } from '../store.js';
+import { escapeHTML, formatDateFR, getDayLetter } from '../utils.js';
 import { icon } from './icons.js';
 import { showToast } from './toast.js';
 import { showModal } from './modal.js';
+import { createHeatmap } from './heatmap.js';
+import { showCelebration } from './celebration.js';
 
 const ZONES = ['past', 'present', 'future'];
 const ZONE_LABELS = { past: 'Passé', present: 'Présent', future: 'Futur' };
@@ -36,6 +38,37 @@ export function createHabitCard(habit, onUpdate, index = 0) {
   const zoneIdx = ZONES.indexOf(habit.zone);
   const canLeft = zoneIdx > 0;
   const canRight = zoneIdx < ZONES.length - 1;
+  const freq = habit.frequency || { type: 'daily' };
+  const isScheduled = getScheduledToday(habit);
+
+  // --- Frequency badge ---
+  let freqBadge = '';
+  if (freq.type === 'specific' && freq.days) {
+    freqBadge = `<span class="card-freq">${freq.days.map(d => getDayLetter(d)).join('-')}</span>`;
+  } else if (freq.type === 'weekly') {
+    freqBadge = `<span class="card-freq">${freq.count || 1}×/sem.</span>`;
+  }
+
+  // --- Day dots row for specific-days habits ---
+  let dayDotsHTML = '';
+  if (freq.type === 'specific' && freq.days && habit.zone === 'present') {
+    const todayJs = new Date(todayISO() + 'T00:00:00').getDay();
+    const todayIso = todayJs === 0 ? 7 : todayJs;
+    dayDotsHTML = '<div class="freq-row">';
+    for (let d = 1; d <= 7; d++) {
+      const active = freq.days.includes(d);
+      const isToday = d === todayIso;
+      dayDotsHTML += `<span class="freq-dot${active ? ' active' : ''}${isToday ? ' today' : ''}">${getDayLetter(d)}</span>`;
+    }
+    dayDotsHTML += '</div>';
+  }
+
+  // --- Weekly progress for non-daily habits ---
+  let weekProgressHTML = '';
+  if (freq.type !== 'daily' && habit.zone === 'present') {
+    const wp = getWeeklyProgress(habit);
+    weekProgressHTML = `<span class="week-progress">${wp.done}/${wp.target} cette sem.</span>`;
+  }
 
   // --- Body content varies by zone ---
   let bodyHTML = '';
@@ -43,12 +76,14 @@ export function createHabitCard(habit, onUpdate, index = 0) {
     const streak = getCurrentStreak(habit);
     const pct = Math.min(Math.round((streak / STREAK_TARGET) * 100), 100);
     const isMilestone = [7, 14, 21, 30].includes(streak);
+    const disabledRing = !isScheduled && freq.type === 'specific';
     bodyHTML = `
+      ${dayDotsHTML}
       <div class="streak-row">
-        <span class="streak-label">${streak > 0 ? icon('bolt', 'i-sm') : ''}${streak}j</span>
+        <span class="streak-label">${streak > 0 ? icon('bolt', 'i-sm') : ''}${streak}j ${weekProgressHTML}</span>
         <div class="streak-track"><div class="streak-fill${isMilestone ? ' milestone' : ''}" style="width:${pct}%"></div></div>
         <span class="streak-target">${STREAK_TARGET}j</span>
-        <button class="check-ring ${isChecked ? 'done' : ''}" data-action="toggle" aria-label="${isChecked ? 'Décocher' : 'Valider'}">
+        <button class="check-ring ${isChecked ? 'done' : ''}${disabledRing ? ' disabled' : ''}" data-action="toggle" aria-label="${isChecked ? 'Décocher' : 'Valider'}"${disabledRing ? ' title="Non prévu aujourd\'hui"' : ''}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${isChecked ? '3' : '2'}" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 6 9 17 4 12"/>
           </svg>
@@ -82,14 +117,18 @@ export function createHabitCard(habit, onUpdate, index = 0) {
   menuHTML += `<button class="card-menu-item card-menu-item--del" data-action="delete" role="menuitem">${icon('trash', 'i-sm')} Supprimer</button>`;
 
   card.innerHTML = `
+    <div class="drag-grip" aria-hidden="true">${icon('grip', 'i-sm')}</div>
     <div class="card-top">
       <div class="card-dot"></div>
       <span class="card-title">${escapeHTML(habit.title)}</span>
+      ${freqBadge}
       ${habit.category ? `<span class="card-cat">${escapeHTML(habit.category)}</span>` : ''}
       ${habit.notes ? `<button class="card-note-btn" data-action="show-notes" aria-label="Voir les notes">${icon('note', 'i-sm')}</button>` : ''}
+      ${habit.zone === 'present' ? `<button class="card-heatmap-btn" data-action="toggle-heatmap" aria-label="Historique">${icon('calendar', 'i-sm')}</button>` : ''}
       <button class="card-menu-btn" data-action="menu" aria-label="Actions" aria-haspopup="true" aria-expanded="false">${icon('moreVertical', 'i-sm')}</button>
     </div>
     <div class="card-body">${bodyHTML}</div>
+    <div class="card-heatmap" style="display:none"></div>
     <div class="card-actions">${actionsHTML}</div>
     <div class="card-menu" role="menu">${menuHTML}</div>
     ${habit.notes ? `<div class="card-notes-popup" role="tooltip"><div class="card-notes-popup-content">${escapeHTML(habit.notes)}</div></div>` : ''}
@@ -101,7 +140,20 @@ export function createHabitCard(habit, onUpdate, index = 0) {
     if (!btn) return;
     const action = btn.dataset.action;
 
-    if (action === 'show-notes') {
+    if (action === 'toggle-heatmap') {
+      const heatmapEl = card.querySelector('.card-heatmap');
+      if (!heatmapEl) return;
+      const isOpen = heatmapEl.style.display !== 'none';
+      if (isOpen) {
+        heatmapEl.style.display = 'none';
+        heatmapEl.innerHTML = '';
+      } else {
+        heatmapEl.style.display = '';
+        heatmapEl.innerHTML = '';
+        heatmapEl.appendChild(createHeatmap(habit));
+      }
+      return;
+    } else if (action === 'show-notes') {
       const isMobile = window.innerWidth <= 768;
       if (isMobile) {
         // Mobile: show as a modal overlay
@@ -191,6 +243,8 @@ export function createHabitCard(habit, onUpdate, index = 0) {
       }
       return;
     } else if (action === 'toggle') {
+      const disabledRing = !isScheduled && freq.type === 'specific';
+      if (disabledRing && !isChecked) return; // allow unchecking but not checking on off-days
       const wasChecked = habit.checkIns.includes(todayISO());
       toggleCheckIn(habit.id);
       const ring = card.querySelector('.check-ring');
@@ -198,6 +252,13 @@ export function createHabitCard(habit, onUpdate, index = 0) {
         ring.classList.remove('bounce');
         void ring.offsetWidth;
         ring.classList.add('bounce');
+      }
+      // Check for celebration after checking in
+      if (!wasChecked) {
+        const newStreak = getCurrentStreak({ ...habit, checkIns: [...habit.checkIns, todayISO()] });
+        if (newStreak > 0 && newStreak % 7 === 0) {
+          setTimeout(() => showCelebration(newStreak), 300);
+        }
       }
       const label = wasChecked ? 'annulé' : 'validé';
       showToast(`${habit.title} — ${label} pour le ${formatDateFR(todayISO(), { noYear: true })}`, {
@@ -219,9 +280,11 @@ export function createHabitCard(habit, onUpdate, index = 0) {
       });
       onUpdate();
     } else if (action === 'edit') {
+      const currentFreq = habit.frequency || { type: 'daily' };
       const fields = [
         { name: 'title', label: 'Nom de l\'habitude', type: 'text', required: true, value: habit.title },
         { name: 'category', label: 'Catégorie', type: 'select', options: getCategories(), value: habit.category },
+        { name: 'frequency', label: 'Fréquence', type: 'frequency', value: currentFreq },
       ];
       fields.push({ name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Notes libres...', value: habit.notes || '' });
       if (habit.zone === 'future') {
@@ -236,6 +299,7 @@ export function createHabitCard(habit, onUpdate, index = 0) {
       });
       if (result && result.title) {
         const updates = { title: result.title, category: result.category || '', notes: result.notes || '' };
+        if (result.frequency) updates.frequency = result.frequency;
         if (habit.zone === 'future') updates.targetDate = result.targetDate || null;
         if (habit.zone === 'past') updates.movedAt = result.movedAt || habit.movedAt;
         updateHabit(habit.id, updates);

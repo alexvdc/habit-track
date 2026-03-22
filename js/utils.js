@@ -44,6 +44,28 @@ export function formatDateFR(isoDate, opts = {}) {
  * @param {string} isoDate
  * @returns {string}
  */
+const DAYS_FR_SHORT = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+const DAYS_FR_LETTER = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+
+/**
+ * Returns French day abbreviation for an ISO day index (1=Lun..7=Dim).
+ * @param {number} isoDay - 1 (Monday) to 7 (Sunday)
+ * @returns {string}
+ */
+export function getDayName(isoDay) {
+  // isoDay: 1=Mon..7=Sun → JS day: 1..6,0
+  const jsDay = isoDay === 7 ? 0 : isoDay;
+  return DAYS_FR_SHORT[jsDay] || '';
+}
+
+/**
+ * Returns single-letter French day for an ISO day index (1=Lun..7=Dim).
+ */
+export function getDayLetter(isoDay) {
+  const jsDay = isoDay === 7 ? 0 : isoDay;
+  return DAYS_FR_LETTER[jsDay] || '';
+}
+
 export function formatRelativeDate(isoDate) {
   if (!isoDate) return '';
   const date = new Date(isoDate + 'T00:00:00');

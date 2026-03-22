@@ -1,4 +1,4 @@
-const CACHE_NAME = 'habittrack-v4';
+const CACHE_NAME = 'habittrack-v5';
 const ASSETS = [
   './',
   './index.html',
@@ -16,6 +16,9 @@ const ASSETS = [
   './js/components/modal.js',
   './js/components/nav.js',
   './js/components/toast.js',
+  './js/components/heatmap.js',
+  './js/components/notifications.js',
+  './js/components/celebration.js',
   './manifest.json'
 ];
 
@@ -34,5 +37,19 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
+  );
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      for (const client of clientList) {
+        if (client.url.includes('index.html') || client.url.endsWith('/')) {
+          return client.focus();
+        }
+      }
+      return clients.openWindow('./');
+    })
   );
 });

@@ -1,10 +1,12 @@
 // js/components/modal.js — Reusable modal (replaces prompt/confirm)
 
+const DAY_LABELS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']; // Mon=1..Sun=7
+
 /**
  * Show a modal dialog.
  * @param {object} options
  * @param {string} options.title
- * @param {Array<{name:string, label:string, type:string, required?:boolean, options?:string[], placeholder?:string, value?:string}>} [options.fields]
+ * @param {Array<{name:string, label:string, type:string, required?:boolean, options?:string[], placeholder?:string, value?:*}>} [options.fields]
  * @param {string} [options.message] - Simple message (for confirm-style modals)
  * @param {string} [options.confirmLabel] - Label for confirm button (default "Confirmer")
  * @param {string} [options.cancelLabel] - Label for cancel button (default "Annuler")
@@ -23,6 +25,9 @@ export function showModal(options) {
     overlay.setAttribute('aria-modal', 'true');
     overlay.setAttribute('aria-label', title);
 
+    // Track frequency state for frequency fields
+    const freqStates = {};
+
     let fieldsHTML = '';
     if (message) {
       fieldsHTML = `<p style="font-size:14px;color:var(--text-secondary);line-height:1.6;margin-bottom:8px">${message}</p>`;
@@ -30,7 +35,12 @@ export function showModal(options) {
     for (const f of fields) {
       const fieldId = `modal-field-${f.name}`;
       let inputHTML;
-      if (f.type === 'select') {
+      if (f.type === 'frequency') {
+        const val = f.value || { type: 'daily' };
+        freqStates[f.name] = { ...val };
+        if (val.type === 'specific' && val.days) freqStates[f.name].days = [...val.days];
+        inputHTML = _buildFrequencyHTML(f.name, val);
+      } else if (f.type === 'select') {
         const opts = (f.options || []).map(o =>
           `<option value="${o}"${f.value === o ? ' selected' : ''}>${o}</option>`
         ).join('');
@@ -58,6 +68,13 @@ export function showModal(options) {
     `;
 
     document.body.appendChild(overlay);
+
+    // Wire up frequency selectors
+    for (const f of fields) {
+      if (f.type === 'frequency') {
+        _wireFrequency(overlay, f.name, freqStates);
+      }
+    }
 
     const form = overlay.querySelector('#modal-form');
     const firstInput = form.querySelector('input, select, textarea');
@@ -103,7 +120,7 @@ export function showModal(options) {
       // Validate required fields
       let hasError = false;
       for (const f of fields) {
-        if (f.required) {
+        if (f.required && f.type !== 'frequency') {
           const el = form.elements[f.name];
           if (el && !el.value.trim()) {
             el.classList.add('field-error');
@@ -124,10 +141,93 @@ export function showModal(options) {
       }
       const data = {};
       for (const f of fields) {
-        const el = form.elements[f.name];
-        data[f.name] = el ? el.value.trim() : '';
+        if (f.type === 'frequency') {
+          data[f.name] = freqStates[f.name];
+        } else {
+          const el = form.elements[f.name];
+          data[f.name] = el ? el.value.trim() : '';
+        }
       }
       close(data);
     });
   });
+}
+
+function _buildFrequencyHTML(name, val) {
+  const types = [
+    { id: 'daily', label: 'Quotidien' },
+    { id: 'specific', label: 'Jours précis' },
+    { id: 'weekly', label: 'X fois/sem.' },
+  ];
+
+  let html = `<div class="freq-selector" data-freq-name="${name}">`;
+  html += `<div class="freq-type-btns">`;
+  for (const t of types) {
+    html += `<button type="button" class="freq-type-btn${val.type === t.id ? ' active' : ''}" data-freq-type="${t.id}">${t.label}</button>`;
+  }
+  html += `</div>`;
+
+  // Specific days sub-field
+  const days = val.days || [];
+  html += `<div class="freq-sub freq-sub--specific" style="display:${val.type === 'specific' ? 'flex' : 'none'}">`;
+  for (let d = 1; d <= 7; d++) {
+    html += `<button type="button" class="day-toggle${days.includes(d) ? ' active' : ''}" data-day="${d}">${DAY_LABELS[d - 1]}</button>`;
+  }
+  html += `</div>`;
+
+  // Weekly count sub-field
+  html += `<div class="freq-sub freq-sub--weekly" style="display:${val.type === 'weekly' ? 'flex' : 'none'}">`;
+  html += `<label class="freq-count-label">Nombre de fois par semaine</label>`;
+  html += `<input type="number" class="freq-count-input" min="1" max="7" value="${val.count || 3}">`;
+  html += `</div>`;
+
+  html += `</div>`;
+  return html;
+}
+
+function _wireFrequency(overlay, name, freqStates) {
+  const container = overlay.querySelector(`.freq-selector[data-freq-name="${name}"]`);
+  if (!container) return;
+
+  // Type buttons
+  container.querySelectorAll('.freq-type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      container.querySelectorAll('.freq-type-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const type = btn.dataset.freqType;
+      freqStates[name].type = type;
+
+      container.querySelector('.freq-sub--specific').style.display = type === 'specific' ? 'flex' : 'none';
+      container.querySelector('.freq-sub--weekly').style.display = type === 'weekly' ? 'flex' : 'none';
+
+      if (type === 'daily') {
+        delete freqStates[name].days;
+        delete freqStates[name].count;
+      }
+    });
+  });
+
+  // Day toggles
+  container.querySelectorAll('.day-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('active');
+      const day = parseInt(btn.dataset.day, 10);
+      if (!freqStates[name].days) freqStates[name].days = [];
+      const idx = freqStates[name].days.indexOf(day);
+      if (idx === -1) {
+        freqStates[name].days.push(day);
+        freqStates[name].days.sort((a, b) => a - b);
+      } else {
+        freqStates[name].days.splice(idx, 1);
+      }
+    });
+  });
+
+  // Weekly count
+  const countInput = container.querySelector('.freq-count-input');
+  if (countInput) {
+    countInput.addEventListener('input', () => {
+      freqStates[name].count = parseInt(countInput.value, 10) || 3;
+    });
+  }
 }

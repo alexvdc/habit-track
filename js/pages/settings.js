@@ -4,6 +4,7 @@ import { exportData, importData, resetData, getSettings, updateSettings, getCate
 import { icon } from '../components/icons.js';
 import { showModal } from '../components/modal.js';
 import { showToast } from '../components/toast.js';
+import { scheduleReminder, cancelReminder } from '../components/notifications.js';
 
 export function render(container) {
   const settings = getSettings();
@@ -77,9 +78,16 @@ export function render(container) {
         <div class="toggle-row">
           <div>
             <div class="toggle-label">Rappel quotidien</div>
-            <div class="toggle-desc">Notification pour le check-in du soir</div>
+            <div class="toggle-desc">Notification pour le check-in</div>
           </div>
           <button class="toggle-switch${settings.reminder ? ' on' : ''}" data-pref="reminder" role="switch" aria-checked="${!!settings.reminder}" aria-label="Rappel quotidien"></button>
+        </div>
+        <div class="toggle-row toggle-row--sub${settings.reminder ? '' : ' hidden'}" id="reminder-time-row">
+          <div>
+            <div class="toggle-label">Heure du rappel</div>
+            <div class="toggle-desc">À quelle heure recevoir la notification</div>
+          </div>
+          <input type="time" class="time-picker" id="reminder-time" value="${settings.reminderTime || '20:00'}" aria-label="Heure du rappel">
         </div>
         <div class="toggle-row">
           <div>
@@ -87,6 +95,13 @@ export function render(container) {
             <div class="toggle-desc">Affiche une barre de progression vers 30j</div>
           </div>
           <button class="toggle-switch${settings.streak30 ? ' on' : ''}" data-pref="streak30" role="switch" aria-checked="${!!settings.streak30}" aria-label="Objectif streak à 30 jours"></button>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Célébration de streak</div>
+            <div class="toggle-desc">Animation tous les 7 jours consécutifs</div>
+          </div>
+          <button class="toggle-switch${settings.celebrations !== false ? ' on' : ''}" data-pref="celebrations" role="switch" aria-checked="${settings.celebrations !== false}" aria-label="Célébration de streak"></button>
         </div>
       </div>
 
@@ -204,8 +219,33 @@ export function render(container) {
       const isOn = toggle.classList.contains('on');
       toggle.setAttribute('aria-checked', String(isOn));
       updateSettings({ [pref]: isOn });
+
+      // Show/hide reminder time row
+      if (pref === 'reminder') {
+        const timeRow = container.querySelector('#reminder-time-row');
+        if (timeRow) timeRow.classList.toggle('hidden', !isOn);
+        if (isOn) {
+          const time = container.querySelector('#reminder-time')?.value || '20:00';
+          scheduleReminder(time);
+        } else {
+          cancelReminder();
+        }
+      }
     });
   });
+
+  // --- Reminder time picker ---
+  const timePicker = container.querySelector('#reminder-time');
+  if (timePicker) {
+    timePicker.addEventListener('change', () => {
+      const time = timePicker.value;
+      updateSettings({ reminderTime: time });
+      if (settings.reminder) {
+        scheduleReminder(time);
+        showToast(`Rappel programmé à ${time}`);
+      }
+    });
+  }
 
   // --- Export ---
   container.querySelector('#btn-export').addEventListener('click', () => {
