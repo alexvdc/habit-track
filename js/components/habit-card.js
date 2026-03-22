@@ -66,6 +66,7 @@ export function createHabitCard(habit, onUpdate) {
       <div class="card-dot"></div>
       <span class="card-title">${escapeHTML(habit.title)}</span>
       ${habit.category ? `<span class="card-cat">${escapeHTML(habit.category)}</span>` : ''}
+      ${habit.notes ? `<span class="card-note-indicator" title="Contient des notes">${icon('note', 'i-sm')}</span>` : ''}
     </div>
     <div class="card-body">${bodyHTML}</div>
     <div class="card-actions">${actionsHTML}</div>
@@ -104,6 +105,7 @@ export function createHabitCard(habit, onUpdate) {
         { name: 'title', label: 'Nom de l\'habitude', type: 'text', required: true, value: habit.title },
         { name: 'category', label: 'Catégorie', type: 'select', options: getCategories(), value: habit.category },
       ];
+      fields.push({ name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Notes libres...', value: habit.notes || '' });
       if (habit.zone === 'future') {
         fields.push({ name: 'targetDate', label: 'Date cible', type: 'date', value: habit.targetDate || '' });
       } else if (habit.zone === 'past') {
@@ -115,7 +117,7 @@ export function createHabitCard(habit, onUpdate) {
         confirmLabel: 'Enregistrer',
       });
       if (result && result.title) {
-        const updates = { title: result.title, category: result.category || '' };
+        const updates = { title: result.title, category: result.category || '', notes: result.notes || '' };
         if (habit.zone === 'future') updates.targetDate = result.targetDate || null;
         if (habit.zone === 'past') updates.movedAt = result.movedAt || habit.movedAt;
         updateHabit(habit.id, updates);

@@ -189,6 +189,8 @@ h3 { font-size: 0.9375rem; }
 .habit-card--future .card-dot { background: var(--future); }
 .card-title { font-weight: 600; font-size: 15px; flex: 1; }
 .card-cat { font-size: 11px; color: var(--primary-dark); background: var(--primary-100); padding: 3px 10px; border-radius: 8px; font-weight: 600; }
+.card-note-indicator { color: var(--text-muted); opacity: 0.6; margin-left: auto; }
+.card-note-indicator:hover { opacity: 1; color: var(--primary); }
 .card-body { margin-bottom: 12px; }
 .streak-row { display: flex; align-items: center; gap: 10px; }
 .streak-label { font-weight: 700; font-size: 14px; color: var(--accent); display: flex; align-items: center; gap: 4px; white-space: nowrap; }
