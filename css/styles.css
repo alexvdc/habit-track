@@ -1,0 +1,6 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, -apple-system, sans-serif; min-height: 100vh; }
+.nav-list { display: flex; list-style: none; gap: 1rem; padding: 1rem; }
+.nav-link { text-decoration: none; color: inherit; padding: 0.5rem 1rem; border-radius: 0.5rem; }
+.nav-link.active { font-weight: bold; }
+#app { padding: 1rem; }
