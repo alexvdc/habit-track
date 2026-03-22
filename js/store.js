@@ -5,7 +5,14 @@ const STORAGE_KEY = 'habittrack_data';
 const DEFAULT_DATA = {
   habits: [],
   reflections: [],
-  settings: { exportVersion: 1 }
+  settings: {
+    exportVersion: 1,
+    theme: 'teal',
+    reminder: true,
+    streak30: true,
+    celebrations: false,
+    categories: ['bien-être', 'sport', 'développement', 'santé', 'technique', 'créativité']
+  }
 };
 
 function generateId() {
@@ -38,11 +45,26 @@ function loadData() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return structuredClone(DEFAULT_DATA);
     const data = JSON.parse(raw);
-    return {
+    const result = {
       habits: data.habits || [],
       reflections: data.reflections || [],
       settings: { ...DEFAULT_DATA.settings, ...data.settings }
     };
+
+    // Migrate legacy categories key into unified store
+    const legacyCats = localStorage.getItem('habittrack_categories');
+    if (legacyCats) {
+      try {
+        const parsed = JSON.parse(legacyCats);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          result.settings.categories = parsed;
+        }
+      } catch {}
+      localStorage.removeItem('habittrack_categories');
+      saveData(result);
+    }
+
+    return result;
   } catch {
     return structuredClone(DEFAULT_DATA);
   }
@@ -200,6 +222,23 @@ function resetData() {
   saveData(structuredClone(DEFAULT_DATA));
 }
 
+// --- Settings ---
+
+function getSettings() {
+  return loadData().settings;
+}
+
+function updateSettings(updates) {
+  const data = loadData();
+  data.settings = { ...data.settings, ...updates };
+  saveData(data);
+  return data.settings;
+}
+
+function getCategories() {
+  return loadData().settings.categories || DEFAULT_DATA.settings.categories;
+}
+
 // --- Stats ---
 
 function getStats() {
@@ -252,5 +291,6 @@ export {
   getCurrentStreak, getDaysSince,
   addReflection, updateReflection, getReflections, getReflectionForCurrentWeek,
   exportData, importData, resetData, getStats,
+  getSettings, updateSettings, getCategories,
   todayISO, getMonday
 };
