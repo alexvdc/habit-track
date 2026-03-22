@@ -86,12 +86,13 @@ export function createHabitCard(habit, onUpdate, index = 0) {
       <div class="card-dot"></div>
       <span class="card-title">${escapeHTML(habit.title)}</span>
       ${habit.category ? `<span class="card-cat">${escapeHTML(habit.category)}</span>` : ''}
-      ${habit.notes ? `<span class="card-note-indicator" title="Contient des notes">${icon('note', 'i-sm')}</span>` : ''}
+      ${habit.notes ? `<button class="card-note-btn" data-action="show-notes" aria-label="Voir les notes">${icon('note', 'i-sm')}</button>` : ''}
       <button class="card-menu-btn" data-action="menu" aria-label="Actions" aria-haspopup="true" aria-expanded="false">${icon('moreVertical', 'i-sm')}</button>
     </div>
     <div class="card-body">${bodyHTML}</div>
     <div class="card-actions">${actionsHTML}</div>
     <div class="card-menu" role="menu">${menuHTML}</div>
+    ${habit.notes ? `<div class="card-notes-popup" role="tooltip"><div class="card-notes-popup-content">${escapeHTML(habit.notes)}</div></div>` : ''}
   `;
 
   // --- Event delegation ---
@@ -100,7 +101,51 @@ export function createHabitCard(habit, onUpdate, index = 0) {
     if (!btn) return;
     const action = btn.dataset.action;
 
-    if (action === 'menu') {
+    if (action === 'show-notes') {
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        // Mobile: show as a modal overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'notes-modal-overlay';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-label', 'Notes');
+        overlay.innerHTML = `
+          <div class="notes-modal">
+            <div class="notes-modal-head">
+              <span class="notes-modal-title">${icon('note', 'i-sm')} Notes</span>
+              <button class="notes-modal-close" aria-label="Fermer">${icon('x', 'i-sm')}</button>
+            </div>
+            <div class="notes-modal-body">${escapeHTML(habit.notes || '')}</div>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+        const closeModal = () => overlay.remove();
+        overlay.querySelector('.notes-modal-close').addEventListener('click', closeModal);
+        overlay.addEventListener('click', (ev) => { if (ev.target === overlay) closeModal(); });
+        overlay.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') closeModal(); });
+        overlay.querySelector('.notes-modal-close').focus();
+      } else {
+        // Desktop: toggle popup
+        const popup = card.querySelector('.card-notes-popup');
+        if (!popup) return;
+        const isOpen = popup.classList.toggle('open');
+        if (isOpen) {
+          const closePopup = () => {
+            popup.classList.remove('open');
+            document.removeEventListener('click', handleOutside, true);
+            document.removeEventListener('keydown', handleEsc);
+          };
+          const handleOutside = (ev) => {
+            if (!popup.contains(ev.target) && ev.target !== btn && !btn.contains(ev.target)) closePopup();
+          };
+          const handleEsc = (ev) => { if (ev.key === 'Escape') closePopup(); };
+          setTimeout(() => document.addEventListener('click', handleOutside, true), 0);
+          document.addEventListener('keydown', handleEsc);
+        }
+      }
+      return;
+    } else if (action === 'menu') {
       const menu = card.querySelector('.card-menu');
       const isOpen = menu.classList.toggle('open');
       btn.setAttribute('aria-expanded', String(isOpen));
