@@ -4,7 +4,7 @@ import { exportData, importData, resetData, getSettings, updateSettings, getCate
 import { icon } from '../components/icons.js';
 import { showModal } from '../components/modal.js';
 import { showToast } from '../components/toast.js';
-import { scheduleReminder, cancelReminder } from '../components/notifications.js';
+import { scheduleReminder, cancelReminder, sendTestNotification } from '../components/notifications.js';
 
 export function render(container) {
   const settings = getSettings();
@@ -88,6 +88,13 @@ export function render(container) {
             <div class="toggle-desc">À quelle heure recevoir la notification</div>
           </div>
           <input type="time" class="time-picker" id="reminder-time" value="${settings.reminderTime || '20:00'}" aria-label="Heure du rappel">
+        </div>
+        <div class="toggle-row toggle-row--sub${settings.reminder ? '' : ' hidden'}" id="reminder-test-row">
+          <div>
+            <div class="toggle-label">Tester la notification</div>
+            <div class="toggle-desc">Envoie une notification immédiate pour vérifier</div>
+          </div>
+          <button class="btn btn--sm" id="btn-test-notif">Tester</button>
         </div>
         <div class="toggle-row">
           <div>
@@ -220,10 +227,12 @@ export function render(container) {
       toggle.setAttribute('aria-checked', String(isOn));
       updateSettings({ [pref]: isOn });
 
-      // Show/hide reminder time row
+      // Show/hide reminder sub-rows
       if (pref === 'reminder') {
         const timeRow = container.querySelector('#reminder-time-row');
+        const testRow = container.querySelector('#reminder-test-row');
         if (timeRow) timeRow.classList.toggle('hidden', !isOn);
+        if (testRow) testRow.classList.toggle('hidden', !isOn);
         if (isOn) {
           const time = container.querySelector('#reminder-time')?.value || '20:00';
           scheduleReminder(time);
@@ -243,6 +252,19 @@ export function render(container) {
       if (settings.reminder) {
         scheduleReminder(time);
         showToast(`Rappel programmé à ${time}`);
+      }
+    });
+  }
+
+  // --- Test notification button ---
+  const testBtn = container.querySelector('#btn-test-notif');
+  if (testBtn) {
+    testBtn.addEventListener('click', async () => {
+      const ok = await sendTestNotification();
+      if (ok) {
+        showToast('Notification envoyée !');
+      } else {
+        showToast('Permission de notification non accordée');
       }
     });
   }

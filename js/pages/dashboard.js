@@ -7,6 +7,34 @@ import { escapeHTML, formatDateFR } from '../utils.js';
 
 const STREAK_TARGET = 30;
 
+const DAILY_QUOTES = [
+  { text: "Nous sommes ce que nous répétons chaque jour. L'excellence n'est alors plus un acte, mais une habitude.", author: "Aristote" },
+  { text: "Le secret du changement, c'est de concentrer toute ton énergie non pas à lutter contre le passé, mais à construire l'avenir.", author: "Socrate" },
+  { text: "La motivation te met en route. L'habitude te fait avancer.", author: "Jim Ryun" },
+  { text: "Chaque action que tu poses est un vote pour le type de personne que tu souhaites devenir.", author: "James Clear" },
+  { text: "Ce n'est pas ce que nous faisons de temps en temps qui façonne notre vie, mais ce que nous faisons régulièrement.", author: "Tony Robbins" },
+  { text: "La discipline est le pont entre les objectifs et leur accomplissement.", author: "Jim Rohn" },
+  { text: "Tu n'as pas besoin d'être parfait. Tu as besoin d'être régulier.", author: "Proverbe coaching" },
+  { text: "Le meilleur moment pour planter un arbre était il y a 20 ans. Le deuxième meilleur moment, c'est maintenant.", author: "Proverbe chinois" },
+  { text: "Les petites choses qu'on fait chaque jour comptent bien plus que les grandes choses qu'on fait de temps en temps.", author: "Robin Sharma" },
+  { text: "Prends soin de tes habitudes, elles prendront soin de ton avenir.", author: "Proverbe coaching" },
+  { text: "Le progrès, ce n'est pas la perfection. C'est la constance.", author: "Proverbe coaching" },
+  { text: "Commence là où tu es. Utilise ce que tu as. Fais ce que tu peux.", author: "Arthur Ashe" },
+  { text: "Une habitude ne peut pas être jetée par la fenêtre ; elle doit être accompagnée à la porte, marche par marche.", author: "Mark Twain" },
+  { text: "Le succès est la somme de petits efforts, répétés jour après jour.", author: "Robert Collier" },
+  { text: "Celui qui déplace une montagne commence par déplacer de petites pierres.", author: "Confucius" },
+];
+
+function getDailyQuote() {
+  const today = todayISO();
+  let hash = 0;
+  for (let i = 0; i < today.length; i++) {
+    hash = ((hash << 5) - hash) + today.charCodeAt(i);
+    hash |= 0;
+  }
+  return DAILY_QUOTES[Math.abs(hash) % DAILY_QUOTES.length];
+}
+
 export function render(container) {
   const stats = getStats();
   const present = getHabitsByZone('present');
@@ -67,6 +95,8 @@ export function render(container) {
         <p>La régularité compte plus que la perfection. Même 1 minute de pratique maintient le streak vivant.</p>
       </div>`;
   }
+
+  const quote = getDailyQuote();
 
   container.innerHTML = `
     <div class="page-header">
@@ -133,6 +163,11 @@ export function render(container) {
           </div>
         ` : ''}
         ${tipHTML}
+        <div class="panel panel--quote">
+          <div class="quote-head">${icon('star', 'i-sm')} Citation du jour</div>
+          <blockquote class="quote-text">${escapeHTML(quote.text)}</blockquote>
+          <cite class="quote-author">\u2014 ${escapeHTML(quote.author)}</cite>
+        </div>
       </div>
     </div>
   `;

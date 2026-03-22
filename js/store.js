@@ -77,7 +77,7 @@ function saveData(data) {
 
 // --- Habits CRUD ---
 
-function addHabit(title, zone, category = '', targetDate = null, frequency = null) {
+function addHabit(title, zone, category = '', targetDate = null, frequency = null, extra = {}) {
   const data = loadData();
   const zoneHabits = data.habits.filter(h => h.zone === zone);
   const maxOrder = zoneHabits.reduce((max, h) => Math.max(max, h.order ?? 0), -1);
@@ -92,7 +92,12 @@ function addHabit(title, zone, category = '', targetDate = null, frequency = nul
     frequency: frequency || { type: 'daily' },
     order: maxOrder + 1,
     checkIns: [],
-    notes: ''
+    notes: '',
+    why: extra.why || '',
+    vision: extra.vision || '',
+    metric: extra.metric || '',
+    metricLog: {},
+    acquiredReflection: ''
   };
   data.habits.push(habit);
   saveData(data);
@@ -138,6 +143,15 @@ function toggleCheckIn(id, date = todayISO()) {
   }
   saveData(data);
   return habit;
+}
+
+function logMetric(id, date, value) {
+  const data = loadData();
+  const habit = data.habits.find(h => h.id === id);
+  if (!habit) return;
+  if (!habit.metricLog) habit.metricLog = {};
+  habit.metricLog[date] = value;
+  saveData(data);
 }
 
 // --- Frequency helpers ---
@@ -422,7 +436,7 @@ function getStats() {
 
 export {
   loadData, saveData, addHabit, updateHabit, deleteHabit,
-  getHabitsByZone, moveHabit, toggleCheckIn, reorderHabit,
+  getHabitsByZone, moveHabit, toggleCheckIn, logMetric, reorderHabit,
   getCurrentStreak, getDaysSince,
   getScheduledToday, isScheduledOn, getWeeklyProgress,
   addReflection, updateReflection, getReflections, getReflectionForCurrentWeek,

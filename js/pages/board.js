@@ -229,12 +229,17 @@ export function render(container) {
       const zone = btn.dataset.zone;
       const fields = [
         { name: 'title', label: 'Nom de l\'habitude', type: 'text', required: true, placeholder: 'Ex : Méditer 10 min' },
+        { name: 'why', label: 'Pourquoi cette habitude ?', type: 'textarea', placeholder: 'Ex : Pour ancrer un moment de calme avant ma journée...' },
         { name: 'category', label: 'Catégorie', type: 'select', options: getCategories() },
         { name: 'frequency', label: 'Fréquence', type: 'frequency', value: { type: 'daily' } },
       ];
 
+      if (zone === 'present') {
+        fields.push({ name: 'metric', label: 'Suivi quotidien (optionnel)', type: 'text', placeholder: 'Ex : Nombre de pompes, minutes, pages...' });
+      }
       if (zone === 'future') {
         fields.push({ name: 'targetDate', label: 'Date cible', type: 'date' });
+        fields.push({ name: 'vision', label: 'Ma vision', type: 'textarea', placeholder: 'Comment je me vois quand cette habitude sera ancrée...' });
       } else if (zone === 'past') {
         fields.push({ name: 'movedAt', label: 'Date d\'acquisition', type: 'date' });
       }
@@ -246,7 +251,8 @@ export function render(container) {
       });
 
       if (result && result.title) {
-        const habit = addHabit(result.title, zone, result.category || '', result.targetDate || null, result.frequency || null);
+        const extra = { why: result.why || '', vision: result.vision || '', metric: result.metric || '' };
+        const habit = addHabit(result.title, zone, result.category || '', result.targetDate || null, result.frequency || null, extra);
         if (result.movedAt) {
           updateHabit(habit.id, { movedAt: result.movedAt });
         }

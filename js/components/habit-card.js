@@ -1,6 +1,6 @@
 // js/components/habit-card.js — V2 habit card with dots, streak bars, check rings
 
-import { toggleCheckIn, moveHabit, deleteHabit, updateHabit, getCurrentStreak, getDaysSince, todayISO, loadData, saveData, getCategories, getScheduledToday, getWeeklyProgress } from '../store.js';
+import { toggleCheckIn, moveHabit, deleteHabit, updateHabit, getCurrentStreak, getDaysSince, todayISO, loadData, saveData, getCategories, getScheduledToday, getWeeklyProgress, logMetric } from '../store.js';
 import { escapeHTML, formatDateFR, getDayLetter } from '../utils.js';
 import { icon } from './icons.js';
 import { showToast } from './toast.js';
@@ -89,17 +89,27 @@ export function createHabitCard(habit, onUpdate, index = 0) {
           </svg>
         </button>
       </div>`;
+    if (habit.metric) {
+      const metricVal = (habit.metricLog || {})[todayISO()];
+      bodyHTML += `<div class="card-metric">${metricVal != null ? `<span class="card-metric-val">${escapeHTML(String(metricVal))}</span>` : '<span class="card-metric-val card-metric-val--empty">\u2014</span>'} <span class="card-metric-label">${escapeHTML(habit.metric)}</span></div>`;
+    }
   } else if (habit.zone === 'past') {
     const dateStr = habit.movedAt ? formatDateFR(habit.movedAt) : null;
     const days = getDaysSince(habit);
     bodyHTML = dateStr
       ? `<span class="meta-text meta-text--past">Acquise le ${dateStr} · ${days}j</span>`
       : `<span class="meta-text meta-text--past">${days} jour${days !== 1 ? 's' : ''}</span>`;
+    if (habit.acquiredReflection) {
+      bodyHTML += `<div class="card-reflection">${escapeHTML(habit.acquiredReflection)}</div>`;
+    }
   } else {
     const dateStr = habit.targetDate ? formatDateFR(habit.targetDate) : null;
     bodyHTML = dateStr
       ? `<span class="meta-text meta-text--future">Objectif : ${dateStr}</span>`
       : `<span class="meta-text meta-text--future">Pas de date cible</span>`;
+    if (habit.vision) {
+      bodyHTML += `<div class="card-vision">${escapeHTML(habit.vision)}</div>`;
+    }
   }
 
   // --- Action buttons ---
@@ -127,6 +137,7 @@ export function createHabitCard(habit, onUpdate, index = 0) {
       ${habit.zone === 'present' ? `<button class="card-heatmap-btn" data-action="toggle-heatmap" aria-label="Historique">${icon('calendar', 'i-sm')}</button>` : ''}
       <button class="card-menu-btn" data-action="menu" aria-label="Actions" aria-haspopup="true" aria-expanded="false">${icon('moreVertical', 'i-sm')}</button>
     </div>
+    ${habit.why ? `<div class="card-why">${escapeHTML(habit.why)}</div>` : ''}
     <div class="card-body">${bodyHTML}</div>
     <div class="card-heatmap" style="display:none"></div>
     <div class="card-actions">${actionsHTML}</div>
@@ -253,6 +264,19 @@ export function createHabitCard(habit, onUpdate, index = 0) {
         void ring.offsetWidth;
         ring.classList.add('bounce');
       }
+      // Prompt for metric value after checking in
+      if (!wasChecked && habit.metric) {
+        const metricResult = await showModal({
+          title: habit.metric,
+          fields: [
+            { name: 'value', label: 'Valeur du jour', type: 'text', placeholder: 'Ex : 50' }
+          ],
+          confirmLabel: 'Enregistrer',
+        });
+        if (metricResult && metricResult.value) {
+          logMetric(habit.id, todayISO(), metricResult.value);
+        }
+      }
       // Check for celebration after checking in
       if (!wasChecked) {
         const newStreak = getCurrentStreak({ ...habit, checkIns: [...habit.checkIns, todayISO()] });
@@ -267,6 +291,21 @@ export function createHabitCard(habit, onUpdate, index = 0) {
       onUpdate();
     } else if (action === 'move-left') {
       const newZone = ZONES[zoneIdx - 1];
+      // Reflection prompt when acquiring a habit (present → past)
+      if (habit.zone === 'present' && newZone === 'past') {
+        const reflResult = await showModal({
+          title: 'Habitude acquise !',
+          message: `Tu t\u2019appr\u00eates \u00e0 marquer \u00ab\u202f${escapeHTML(habit.title)}\u202f\u00bb comme acquise. Prends un moment pour r\u00e9fl\u00e9chir \u00e0 ce parcours.`,
+          fields: [
+            { name: 'acquiredReflection', label: 'Qu\u2019est-ce que cette habitude t\u2019a apport\u00e9\u202f?', type: 'textarea', placeholder: 'Ex : Plus de calme au quotidien, meilleur sommeil, confiance en moi...' }
+          ],
+          confirmLabel: 'Marquer comme acquise',
+        });
+        if (!reflResult) return;
+        if (reflResult.acquiredReflection) {
+          updateHabit(habit.id, { acquiredReflection: reflResult.acquiredReflection });
+        }
+      }
       moveHabit(habit.id, newZone);
       showToast(`${habit.title} déplacé vers ${ZONE_LABELS[newZone]}`, {
         undo: () => { moveHabit(habit.id, habit.zone); onUpdate(); }
@@ -283,14 +322,20 @@ export function createHabitCard(habit, onUpdate, index = 0) {
       const currentFreq = habit.frequency || { type: 'daily' };
       const fields = [
         { name: 'title', label: 'Nom de l\'habitude', type: 'text', required: true, value: habit.title },
+        { name: 'why', label: 'Pourquoi cette habitude ?', type: 'textarea', placeholder: 'Ex : Pour ancrer un moment de calme...', value: habit.why || '' },
         { name: 'category', label: 'Catégorie', type: 'select', options: getCategories(), value: habit.category },
         { name: 'frequency', label: 'Fréquence', type: 'frequency', value: currentFreq },
       ];
+      if (habit.zone === 'present') {
+        fields.push({ name: 'metric', label: 'Suivi quotidien (optionnel)', type: 'text', placeholder: 'Ex : Nombre de pompes, minutes...', value: habit.metric || '' });
+      }
       fields.push({ name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Notes libres...', value: habit.notes || '' });
       if (habit.zone === 'future') {
         fields.push({ name: 'targetDate', label: 'Date cible', type: 'date', value: habit.targetDate || '' });
+        fields.push({ name: 'vision', label: 'Ma vision', type: 'textarea', placeholder: 'Comment je me vois quand cette habitude sera ancrée...', value: habit.vision || '' });
       } else if (habit.zone === 'past') {
         fields.push({ name: 'movedAt', label: 'Date d\'acquisition', type: 'date', value: habit.movedAt || '' });
+        fields.push({ name: 'acquiredReflection', label: 'Ce que cette habitude m\'a apporté', type: 'textarea', placeholder: 'Ex : Plus de calme au quotidien...', value: habit.acquiredReflection || '' });
       }
       const result = await showModal({
         title: 'Modifier l\'habitude',
@@ -298,10 +343,17 @@ export function createHabitCard(habit, onUpdate, index = 0) {
         confirmLabel: 'Enregistrer',
       });
       if (result && result.title) {
-        const updates = { title: result.title, category: result.category || '', notes: result.notes || '' };
+        const updates = { title: result.title, category: result.category || '', notes: result.notes || '', why: result.why || '' };
         if (result.frequency) updates.frequency = result.frequency;
-        if (habit.zone === 'future') updates.targetDate = result.targetDate || null;
-        if (habit.zone === 'past') updates.movedAt = result.movedAt || habit.movedAt;
+        if (result.metric !== undefined) updates.metric = result.metric || '';
+        if (habit.zone === 'future') {
+          updates.targetDate = result.targetDate || null;
+          updates.vision = result.vision || '';
+        }
+        if (habit.zone === 'past') {
+          updates.movedAt = result.movedAt || habit.movedAt;
+          updates.acquiredReflection = result.acquiredReflection || '';
+        }
         updateHabit(habit.id, updates);
         showToast(`${result.title} modifié`);
         onUpdate();

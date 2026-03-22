@@ -256,6 +256,28 @@ h3 { font-size: 0.9375rem; }
 .notes-modal-body { font-size: 14px; line-height: 1.7; color: var(--text-secondary); white-space: pre-wrap; word-break: break-word; overflow-y: auto; }
 [data-theme="dark"] .notes-modal-overlay { background: rgba(0,0,0,0.5); }
 
+/* ============= CARD — WHY SUBTITLE ============= */
+.card-why { font-size: 12px; color: var(--text-muted); font-style: italic; line-height: 1.5; margin: -6px 0 8px; padding-left: 18px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+/* ============= CARD — METRIC DISPLAY ============= */
+.card-metric { display: flex; align-items: baseline; gap: 6px; margin-top: 6px; font-size: 12px; }
+.card-metric-val { font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+.card-metric-val--empty { color: var(--text-muted); font-weight: 400; }
+.card-metric-label { color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ============= CARD — VISION (future) ============= */
+.card-vision { font-size: 12px; color: var(--future-dark); font-style: italic; line-height: 1.5; margin-top: 6px; padding: 6px 10px; background: var(--future-light); border-radius: 8px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+/* ============= CARD — ACQUIRED REFLECTION (past) ============= */
+.card-reflection { font-size: 12px; color: var(--past-dark); font-style: italic; line-height: 1.5; margin-top: 6px; padding: 6px 10px; background: var(--past-light); border-radius: 8px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+/* ============= DAILY QUOTE (dashboard) ============= */
+.panel--quote { background: linear-gradient(135deg, var(--primary-50), var(--surface)); border-color: var(--border-teal); }
+.quote-head { font-size: 13px; font-weight: 700; color: var(--primary-dark); display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+.quote-head .i { color: var(--accent); }
+.quote-text { font-size: 15px; font-style: italic; line-height: 1.7; color: var(--text); margin: 0; padding: 0; border: none; }
+.quote-author { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-top: 10px; font-style: normal; }
+
 /* ============= DRAG & DROP ============= */
 .habit-card[draggable="true"] { cursor: grab; }
 .habit-card[draggable="true"]:active { cursor: grabbing; }
@@ -287,6 +309,8 @@ h3 { font-size: 0.9375rem; }
 .btn--ghost:hover { background: var(--primary-50); }
 .btn--secondary { background: var(--surface-alt); color: var(--primary-dark); border-color: var(--border-teal); }
 .btn--secondary:hover { background: var(--primary-100); }
+.btn--sm { padding: 7px 16px; font-size: 13px; min-height: 36px; background: var(--primary); color: #FFF; }
+.btn--sm:hover { background: var(--primary-dark); box-shadow: var(--shadow); }
 .btn--danger { background: var(--danger); color: #FFF; }
 .btn--danger:hover { background: #B91C1C; }
 
@@ -739,6 +763,9 @@ details[open] .tl-summary::before { transform: rotate(90deg); }
   .card-menu-item--del:hover { background: var(--danger-light); }
   .card-note-btn { margin: -4px 0; }
   .card-notes-popup { display: none !important; }
+  .card-why { font-size: 11px; margin: -4px 0 4px; padding-left: 14px; }
+  .card-metric { font-size: 11px; margin-top: 4px; }
+  .card-vision, .card-reflection { font-size: 11px; padding: 4px 8px; margin-top: 4px; }
   .zone-add { padding: 10px; min-height: 44px; font-size: 13px; margin-top: 8px; }
 
   /* Frequency dots compact */

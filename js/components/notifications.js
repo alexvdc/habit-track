@@ -39,6 +39,14 @@ export function cancelReminder() {
   }
 }
 
+export async function sendTestNotification() {
+  if (Notification.permission !== 'granted') {
+    return false;
+  }
+  await _showNotification();
+  return true;
+}
+
 async function _showNotification() {
   try {
     const reg = await navigator.serviceWorker.ready;
