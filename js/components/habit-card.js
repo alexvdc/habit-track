@@ -1,12 +1,18 @@
-// js/components/habit-card.js
+// js/components/habit-card.js — V2 habit card with dots, streak bars, check rings
 
-import { toggleCheckIn, moveHabit, deleteHabit, getCurrentStreak, getDaysSince, todayISO } from '../store.js';
-import { escapeHTML } from '../utils.js';
+import { toggleCheckIn, moveHabit, deleteHabit, updateHabit, getCurrentStreak, getDaysSince, todayISO, loadData, saveData, getCategories } from '../store.js';
+import { escapeHTML, formatDateFR } from '../utils.js';
+import { icon } from './icons.js';
+import { showToast } from './toast.js';
+import { showModal } from './modal.js';
+
+const ZONES = ['past', 'present', 'future'];
+const STREAK_TARGET = 30;
 
 /**
- * Renders a single habit card.
- * @param {Object} habit - habit object from store
- * @param {Function} onUpdate - callback after any mutation
+ * Creates and returns a habit card DOM element.
+ * @param {Object} habit
+ * @param {Function} onUpdate - called after any data mutation
  * @returns {HTMLElement}
  */
 export function createHabitCard(habit, onUpdate) {
@@ -14,60 +20,121 @@ export function createHabitCard(habit, onUpdate) {
   card.className = `habit-card habit-card--${habit.zone}`;
   card.dataset.id = habit.id;
 
-  const isCheckedToday = habit.checkIns.includes(todayISO());
+  const isChecked = habit.checkIns.includes(todayISO());
+  const zoneIdx = ZONES.indexOf(habit.zone);
+  const canLeft = zoneIdx > 0;
+  const canRight = zoneIdx < ZONES.length - 1;
 
-  let metaHTML = '';
+  // --- Body content varies by zone ---
+  let bodyHTML = '';
   if (habit.zone === 'present') {
     const streak = getCurrentStreak(habit);
-    metaHTML = `
-      <span class="habit-streak">${streak}j streak</span>
-      <button class="habit-check ${isCheckedToday ? 'checked' : ''}" data-action="toggle">
-        ${isCheckedToday ? '✓' : '○'}
-      </button>
-    `;
+    const pct = Math.min(Math.round((streak / STREAK_TARGET) * 100), 100);
+    bodyHTML = `
+      <div class="streak-row">
+        <span class="streak-label">${streak > 0 ? icon('bolt', 'i-sm') : ''}${streak}j</span>
+        <div class="streak-track"><div class="streak-fill" style="width:${pct}%"></div></div>
+        <span class="streak-target">${STREAK_TARGET}j</span>
+        <button class="check-ring ${isChecked ? 'done' : ''}" data-action="toggle" aria-label="${isChecked ? 'Décocher' : 'Valider'}">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${isChecked ? '3' : '2'}" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </button>
+      </div>`;
   } else if (habit.zone === 'past') {
+    const dateStr = habit.movedAt ? formatDateFR(habit.movedAt) : null;
     const days = getDaysSince(habit);
-    metaHTML = `<span class="habit-days-since">${days}j sans</span>`;
-  } else if (habit.zone === 'future') {
-    metaHTML = habit.targetDate
-      ? `<span class="habit-target">Objectif : ${escapeHTML(habit.targetDate)}</span>`
-      : `<span class="habit-target">Pas de date cible</span>`;
+    bodyHTML = dateStr
+      ? `<span class="meta-text meta-text--past">Acquise le ${dateStr} · ${days}j</span>`
+      : `<span class="meta-text meta-text--past">${days} jour${days !== 1 ? 's' : ''}</span>`;
+  } else {
+    const dateStr = habit.targetDate ? formatDateFR(habit.targetDate) : null;
+    bodyHTML = dateStr
+      ? `<span class="meta-text meta-text--future">Objectif : ${dateStr}</span>`
+      : `<span class="meta-text meta-text--future">Pas de date cible</span>`;
   }
 
-  const zones = ['past', 'present', 'future'];
-  const currentIdx = zones.indexOf(habit.zone);
-  const canMoveLeft = currentIdx > 0;
-  const canMoveRight = currentIdx < zones.length - 1;
+  // --- Action buttons ---
+  let actionsHTML = '';
+  if (canLeft) actionsHTML += `<button class="card-btn" data-action="move-left" aria-label="Déplacer vers ${ZONES[zoneIdx - 1]}">${icon('arrowLeft', 'i-sm')}</button>`;
+  if (canRight) actionsHTML += `<button class="card-btn" data-action="move-right" aria-label="Déplacer vers ${ZONES[zoneIdx + 1]}">${icon('arrowRight', 'i-sm')}</button>`;
+  actionsHTML += `<button class="card-btn" data-action="edit" aria-label="Modifier">${icon('edit', 'i-sm')}</button>`;
+  actionsHTML += `<button class="card-btn card-btn--del" data-action="delete" aria-label="Supprimer">${icon('trash', 'i-sm')}</button>`;
 
   card.innerHTML = `
-    <div class="habit-card-header">
-      <h3 class="habit-title">${escapeHTML(habit.title)}</h3>
-      ${habit.category ? `<span class="habit-category">${escapeHTML(habit.category)}</span>` : ''}
+    <div class="card-top">
+      <div class="card-dot"></div>
+      <span class="card-title">${escapeHTML(habit.title)}</span>
+      ${habit.category ? `<span class="card-cat">${escapeHTML(habit.category)}</span>` : ''}
     </div>
-    <div class="habit-card-meta">${metaHTML}</div>
-    <div class="habit-card-actions">
-      ${canMoveLeft ? `<button class="habit-move" data-action="move-left" title="Déplacer vers ${zones[currentIdx - 1]}">←</button>` : ''}
-      ${canMoveRight ? `<button class="habit-move" data-action="move-right" title="Déplacer vers ${zones[currentIdx + 1]}">→</button>` : ''}
-      <button class="habit-delete" data-action="delete" title="Supprimer">×</button>
-    </div>
+    <div class="card-body">${bodyHTML}</div>
+    <div class="card-actions">${actionsHTML}</div>
   `;
 
-  card.addEventListener('click', (e) => {
-    const action = e.target.closest('[data-action]')?.dataset.action;
-    if (!action) return;
+  // --- Event delegation ---
+  card.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
 
     if (action === 'toggle') {
+      const wasChecked = habit.checkIns.includes(todayISO());
       toggleCheckIn(habit.id);
+      const label = wasChecked ? 'annulé' : 'validé';
+      showToast(`${habit.title} — ${label} pour le ${formatDateFR(todayISO(), { noYear: true })}`, {
+        undo: () => { toggleCheckIn(habit.id); onUpdate(); }
+      });
       onUpdate();
     } else if (action === 'move-left') {
-      moveHabit(habit.id, zones[currentIdx - 1]);
+      const newZone = ZONES[zoneIdx - 1];
+      moveHabit(habit.id, newZone);
+      showToast(`${habit.title} déplacé vers ${newZone}`, {
+        undo: () => { moveHabit(habit.id, habit.zone); onUpdate(); }
+      });
       onUpdate();
     } else if (action === 'move-right') {
-      moveHabit(habit.id, zones[currentIdx + 1]);
+      const newZone = ZONES[zoneIdx + 1];
+      moveHabit(habit.id, newZone);
+      showToast(`${habit.title} déplacé vers ${newZone}`, {
+        undo: () => { moveHabit(habit.id, habit.zone); onUpdate(); }
+      });
       onUpdate();
+    } else if (action === 'edit') {
+      const fields = [
+        { name: 'title', label: 'Nom de l\'habitude', type: 'text', required: true, value: habit.title },
+        { name: 'category', label: 'Catégorie', type: 'select', options: getCategories(), value: habit.category },
+      ];
+      if (habit.zone === 'future') {
+        fields.push({ name: 'targetDate', label: 'Date cible', type: 'date', value: habit.targetDate || '' });
+      } else if (habit.zone === 'past') {
+        fields.push({ name: 'movedAt', label: 'Date d\'acquisition', type: 'date', value: habit.movedAt || '' });
+      }
+      const result = await showModal({
+        title: 'Modifier l\'habitude',
+        fields,
+        confirmLabel: 'Enregistrer',
+      });
+      if (result && result.title) {
+        const updates = { title: result.title, category: result.category || '' };
+        if (habit.zone === 'future') updates.targetDate = result.targetDate || null;
+        if (habit.zone === 'past') updates.movedAt = result.movedAt || habit.movedAt;
+        updateHabit(habit.id, updates);
+        showToast(`${result.title} modifié`);
+        onUpdate();
+      }
     } else if (action === 'delete') {
-      if (confirm(`Supprimer "${habit.title}" ?`)) {
+      const result = await showModal({
+        title: 'Supprimer cette habitude ?',
+        message: `Tu es sur le point de supprimer « ${escapeHTML(habit.title)} ». Cette action est irréversible.`,
+        confirmLabel: 'Supprimer',
+        danger: true,
+      });
+      if (result) {
+        const snapshot = loadData();
         deleteHabit(habit.id);
+        showToast(`${habit.title} supprimé`, {
+          undo: () => { saveData(snapshot); onUpdate(); }
+        });
         onUpdate();
       }
     }
