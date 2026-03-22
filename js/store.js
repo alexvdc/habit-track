@@ -5,6 +5,8 @@ const STORAGE_KEY = 'habittrack_data';
 const DEFAULT_DATA = {
   habits: [],
   reflections: [],
+  monthlyReviews: [],
+  moodLog: {},
   settings: {
     exportVersion: 1,
     theme: 'teal',
@@ -49,6 +51,8 @@ function loadData() {
     const result = {
       habits: data.habits || [],
       reflections: data.reflections || [],
+      monthlyReviews: data.monthlyReviews || [],
+      moodLog: data.moodLog || {},
       settings: { ...DEFAULT_DATA.settings, ...data.settings }
     };
 
@@ -339,6 +343,24 @@ function getReflectionForCurrentWeek() {
   return loadData().reflections.find(r => r.weekOf === monday) || null;
 }
 
+// --- Mood log ---
+
+function getMoodLog() {
+  return loadData().moodLog || {};
+}
+
+function setMood(date, level, note = '') {
+  const data = loadData();
+  if (!data.moodLog) data.moodLog = {};
+  data.moodLog[date] = { level, note };
+  saveData(data);
+}
+
+function getMoodForDate(date) {
+  const data = loadData();
+  return (data.moodLog || {})[date] || null;
+}
+
 // --- Import / Export ---
 
 function exportData() {
@@ -353,6 +375,8 @@ function importData(jsonString) {
   saveData({
     habits: data.habits,
     reflections: data.reflections,
+    monthlyReviews: data.monthlyReviews || [],
+    moodLog: data.moodLog || {},
     settings: { ...DEFAULT_DATA.settings, ...data.settings }
   });
 }
@@ -440,6 +464,7 @@ export {
   getCurrentStreak, getDaysSince,
   getScheduledToday, isScheduledOn, getWeeklyProgress,
   addReflection, updateReflection, getReflections, getReflectionForCurrentWeek,
+  getMoodLog, setMood, getMoodForDate,
   exportData, importData, resetData, getStats,
   getSettings, updateSettings, getCategories,
   todayISO, getMonday, _formatDate
