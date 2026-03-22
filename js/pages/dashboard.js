@@ -2,6 +2,7 @@
 
 import { getStats, getHabitsByZone } from '../store.js';
 import { barChart } from '../components/chart.js';
+import { escapeHTML } from '../utils.js';
 
 export function render(container) {
   const stats = getStats();
@@ -42,7 +43,7 @@ export function render(container) {
         <section class="dashboard-section">
           <h2>Habitudes acquises</h2>
           <ul class="acquired-list">
-            ${acquired.map(h => `<li>${h.title} <small class="text-muted">depuis ${h.movedAt}</small></li>`).join('')}
+            ${acquired.map(h => `<li>${escapeHTML(h.title)} <small class="text-muted">depuis ${escapeHTML(h.movedAt)}</small></li>`).join('')}
           </ul>
         </section>
       ` : ''}
@@ -51,7 +52,7 @@ export function render(container) {
         <section class="dashboard-section">
           <h2>Prochaines habitudes</h2>
           <ul class="upcoming-list">
-            ${upcoming.map(h => `<li>${h.title} ${h.targetDate ? `<small class="text-muted">objectif : ${h.targetDate}</small>` : ''}</li>`).join('')}
+            ${upcoming.map(h => `<li>${escapeHTML(h.title)} ${h.targetDate ? `<small class="text-muted">objectif : ${escapeHTML(h.targetDate)}</small>` : ''}</li>`).join('')}
           </ul>
         </section>
       ` : ''}

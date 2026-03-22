@@ -1,6 +1,7 @@
 // js/pages/weekly.js
 
 import { addReflection, updateReflection, getReflections, getReflectionForCurrentWeek } from '../store.js';
+import { escapeHTML } from '../utils.js';
 
 export function render(container) {
   const current = getReflectionForCurrentWeek();
@@ -15,15 +16,15 @@ export function render(container) {
       <form class="weekly-form" id="weekly-form">
         <div class="form-group">
           <label for="whatWorked">Qu'est-ce qui a bien fonctionné cette semaine ?</label>
-          <textarea id="whatWorked" rows="3" placeholder="Ce qui a marché...">${current?.whatWorked || ''}</textarea>
+          <textarea id="whatWorked" rows="3" placeholder="Ce qui a marché...">${escapeHTML(current?.whatWorked || '')}</textarea>
         </div>
         <div class="form-group">
           <label for="whatBlocked">Qu'est-ce qui a bloqué ou été difficile ?</label>
-          <textarea id="whatBlocked" rows="3" placeholder="Les difficultés...">${current?.whatBlocked || ''}</textarea>
+          <textarea id="whatBlocked" rows="3" placeholder="Les difficultés...">${escapeHTML(current?.whatBlocked || '')}</textarea>
         </div>
         <div class="form-group">
           <label for="nextSteps">Quels ajustements pour la semaine prochaine ?</label>
-          <textarea id="nextSteps" rows="3" placeholder="Les prochaines étapes...">${current?.nextSteps || ''}</textarea>
+          <textarea id="nextSteps" rows="3" placeholder="Les prochaines étapes...">${escapeHTML(current?.nextSteps || '')}</textarea>
         </div>
         <button type="submit" class="btn btn-primary">${current ? 'Mettre à jour' : 'Enregistrer'}</button>
       </form>
@@ -35,9 +36,9 @@ export function render(container) {
             <details class="reflection-entry">
               <summary>Semaine du ${r.weekOf}</summary>
               <div class="reflection-content">
-                <p><strong>Ce qui a marché :</strong> ${r.whatWorked}</p>
-                <p><strong>Difficultés :</strong> ${r.whatBlocked}</p>
-                <p><strong>Ajustements :</strong> ${r.nextSteps}</p>
+                <p><strong>Ce qui a marché :</strong> ${escapeHTML(r.whatWorked)}</p>
+                <p><strong>Difficultés :</strong> ${escapeHTML(r.whatBlocked)}</p>
+                <p><strong>Ajustements :</strong> ${escapeHTML(r.nextSteps)}</p>
               </div>
             </details>
           `).join('')}

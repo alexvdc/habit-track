@@ -1,6 +1,7 @@
 // js/components/habit-card.js
 
 import { toggleCheckIn, moveHabit, deleteHabit, getCurrentStreak, getDaysSince, todayISO } from '../store.js';
+import { escapeHTML } from '../utils.js';
 
 /**
  * Renders a single habit card.
@@ -29,7 +30,7 @@ export function createHabitCard(habit, onUpdate) {
     metaHTML = `<span class="habit-days-since">${days}j sans</span>`;
   } else if (habit.zone === 'future') {
     metaHTML = habit.targetDate
-      ? `<span class="habit-target">Objectif : ${habit.targetDate}</span>`
+      ? `<span class="habit-target">Objectif : ${escapeHTML(habit.targetDate)}</span>`
       : `<span class="habit-target">Pas de date cible</span>`;
   }
 
@@ -40,8 +41,8 @@ export function createHabitCard(habit, onUpdate) {
 
   card.innerHTML = `
     <div class="habit-card-header">
-      <h3 class="habit-title">${habit.title}</h3>
-      ${habit.category ? `<span class="habit-category">${habit.category}</span>` : ''}
+      <h3 class="habit-title">${escapeHTML(habit.title)}</h3>
+      ${habit.category ? `<span class="habit-category">${escapeHTML(habit.category)}</span>` : ''}
     </div>
     <div class="habit-card-meta">${metaHTML}</div>
     <div class="habit-card-actions">
