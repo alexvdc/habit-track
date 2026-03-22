@@ -316,7 +316,7 @@ h3 { font-size: 0.9375rem; }
 
 /* ============= MODAL ============= */
 .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 500; animation: fade-in 150ms ease; }
-.modal { background: var(--surface); border-radius: var(--radius-xl); padding: 28px; width: 440px; max-width: 92vw; box-shadow: var(--shadow-lg); animation: modal-in 250ms ease; }
+.modal { background: var(--surface); border-radius: var(--radius-xl); padding: 28px; width: 440px; max-width: 92vw; max-height: 85vh; max-height: 85dvh; overflow-y: auto; overscroll-behavior: contain; box-shadow: var(--shadow-lg); animation: modal-in 250ms ease; }
 .modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
 .modal .field { margin-bottom: 16px; }
 .modal .field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.03em; }
@@ -792,6 +792,11 @@ details[open] .tl-summary::before { transform: rotate(90deg); }
 
   /* Frequency selector compact */
   .day-toggle { width: 36px; height: 36px; font-size: 12px; border-radius: 8px; }
+
+  /* Modal: bottom-sheet on mobile */
+  .modal-overlay { align-items: flex-end; }
+  .modal { border-radius: var(--radius-xl) var(--radius-xl) 0 0; width: 100%; max-width: 100%; max-height: 80vh; max-height: 80dvh; padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px)); animation: modal-in 250ms ease; }
+  .modal .field textarea { min-height: 72px; }
 
   /* Shift toasts above bottom nav */
   .toast-container { bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
