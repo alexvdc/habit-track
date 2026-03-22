@@ -1,4 +1,4 @@
-// js/pages/board.js — V2 Board with zones, empty states, modal
+// js/pages/board.js — Board with zones, search, filters, modal
 
 import { getHabitsByZone, addHabit, updateHabit, getCategories } from '../store.js';
 import { createHabitCard } from '../components/habit-card.js';
@@ -11,11 +11,27 @@ const ZONES = [
   { id: 'future',  label: 'Futur',   sub: 'Objectifs à atteindre',       iconName: 'bolt',    emptyIcon: 'bolt',   emptyMsg: 'Planifie ici tes prochaines habitudes à adopter' },
 ];
 
+function normalize(str) {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
 export function render(container) {
+  const categories = getCategories();
+
   container.innerHTML = `
     <div class="page-header">
       <h1>Tableau</h1>
       <p>Organise tes habitudes entre Passé, Présent et Futur</p>
+    </div>
+    <div class="board-toolbar">
+      <div class="search-wrap">
+        ${icon('search')}
+        <input type="text" class="search-input" id="board-search" placeholder="Rechercher une habitude..." autocomplete="off">
+      </div>
+      <div class="filter-chips" id="filter-chips">
+        <button class="filter-chip active" data-cat="all">Tout</button>
+        ${categories.map(c => `<button class="filter-chip" data-cat="${c}">${c}</button>`).join('')}
+      </div>
     </div>
     <div class="board">
       ${ZONES.map(z => `
@@ -37,21 +53,36 @@ export function render(container) {
     </div>
   `;
 
+  let searchQuery = '';
+  let activeCategory = 'all';
+
   function refresh() {
     for (const zone of ZONES) {
       const cardsEl = container.querySelector(`.board-cards[data-zone="${zone.id}"]`);
       cardsEl.innerHTML = '';
-      const habits = getHabitsByZone(zone.id);
+      let habits = getHabitsByZone(zone.id);
+
+      // Apply filters
+      if (searchQuery) {
+        const q = normalize(searchQuery);
+        habits = habits.filter(h => normalize(h.title).includes(q));
+      }
+      if (activeCategory !== 'all') {
+        habits = habits.filter(h => h.category === activeCategory);
+      }
 
       // Update count badge
       const countEl = container.querySelector(`[data-zone-count="${zone.id}"]`);
       if (countEl) countEl.textContent = habits.length;
 
       if (habits.length === 0) {
+        const msg = (searchQuery || activeCategory !== 'all')
+          ? 'Aucun résultat pour ce filtre'
+          : zone.emptyMsg;
         cardsEl.innerHTML = `
           <div class="empty-state">
             <div class="empty-state-icon">${icon(zone.emptyIcon)}</div>
-            <p>${zone.emptyMsg}</p>
+            <p>${msg}</p>
           </div>`;
       } else {
         for (const habit of habits) {
@@ -60,6 +91,23 @@ export function render(container) {
       }
     }
   }
+
+  // Search input
+  const searchInput = container.querySelector('#board-search');
+  searchInput.addEventListener('input', () => {
+    searchQuery = searchInput.value.trim();
+    refresh();
+  });
+
+  // Filter chips
+  container.querySelector('#filter-chips').addEventListener('click', (e) => {
+    const chip = e.target.closest('.filter-chip');
+    if (!chip) return;
+    container.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    activeCategory = chip.dataset.cat;
+    refresh();
+  });
 
   // Add buttons
   container.querySelectorAll('.zone-add').forEach(btn => {
