@@ -44,6 +44,9 @@ export function barChart(data, opts = {}) {
     const cls = isToday ? 'chart-bar-today' : 'chart-bar';
 
     bars += `<rect class="${cls}" x="${x}" y="${y}" width="${barW}" height="${barH}" rx="4"><title>${formatLabel(d.date)} — ${d.count}</title></rect>`;
+    if (isToday) {
+      bars += `<text class="chart-today-label" x="${x + barW / 2}" y="${Math.max(y - 6, pad.top)}" text-anchor="middle">Auj.</text>`;
+    }
 
     // Show labels sparsely
     if (i % Math.ceil(data.length / 5) === 0 || i === data.length - 1) {
