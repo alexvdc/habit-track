@@ -1,6 +1,6 @@
 // js/components/toast.js — Toast notifications with optional undo
 
-const DISMISS_MS = 4000;
+const DISMISS_MS = 5000;
 
 /**
  * Show a toast notification.

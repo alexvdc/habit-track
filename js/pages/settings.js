@@ -11,70 +11,121 @@ export function render(container) {
   container.innerHTML = `
     <div class="page-header">
       <h1>Réglages</h1>
+      <p>Personnalise ton expérience HabitTrack</p>
     </div>
 
     <div class="settings-wrap">
 
       <div class="settings-section">
-        <h2>${icon('sun', 'i-sm')} Apparence</h2>
-        <p>Choisis le thème de l'application.</p>
+        <div class="settings-section-head">
+          <div class="settings-icon-wrap settings-icon-wrap--primary">${icon('sun', 'i-sm')}</div>
+          <div>
+            <h2>Apparence</h2>
+            <p>Choisis le thème qui te convient.</p>
+          </div>
+        </div>
         <div class="theme-row">
           <button class="theme-card${settings.theme === 'light' ? ' selected' : ''}" data-theme="light">
-            <div class="theme-swatch" style="background:linear-gradient(135deg,#FAFAFA 50%,#FFF 50%)"></div>
-            Clair
+            <div class="theme-swatch theme-swatch--light">
+              <div class="theme-preview">
+                <div class="theme-preview-bar"></div>
+                <div class="theme-preview-dots"><span></span><span></span><span></span></div>
+              </div>
+            </div>
+            <span class="theme-name">Clair</span>
           </button>
           <button class="theme-card${!settings.theme || settings.theme === 'teal' ? ' selected' : ''}" data-theme="teal">
-            <div class="theme-swatch" style="background:linear-gradient(135deg,#F0FDFA 50%,#CCFBF1 50%)"></div>
-            Teal
+            <div class="theme-swatch theme-swatch--teal">
+              <div class="theme-preview">
+                <div class="theme-preview-bar"></div>
+                <div class="theme-preview-dots"><span></span><span></span><span></span></div>
+              </div>
+            </div>
+            <span class="theme-name">Teal</span>
           </button>
           <button class="theme-card${settings.theme === 'dark' ? ' selected' : ''}" data-theme="dark">
-            <div class="theme-swatch" style="background:linear-gradient(135deg,#0C0A13 50%,#1A1825 50%)"></div>
-            Sombre
+            <div class="theme-swatch theme-swatch--dark">
+              <div class="theme-preview">
+                <div class="theme-preview-bar"></div>
+                <div class="theme-preview-dots"><span></span><span></span><span></span></div>
+              </div>
+            </div>
+            <span class="theme-name">Sombre</span>
           </button>
         </div>
       </div>
 
       <div class="settings-section">
-        <h2>${icon('list', 'i-sm')} Catégories</h2>
-        <p>Gère les catégories disponibles pour tes habitudes.</p>
+        <div class="settings-section-head">
+          <div class="settings-icon-wrap settings-icon-wrap--primary">${icon('list', 'i-sm')}</div>
+          <div>
+            <h2>Catégories</h2>
+            <p>Gère les catégories de tes habitudes.</p>
+          </div>
+        </div>
         <div class="cat-tags" id="cat-tags"></div>
       </div>
 
       <div class="settings-section">
-        <h2>${icon('bell', 'i-sm')} Préférences</h2>
+        <div class="settings-section-head">
+          <div class="settings-icon-wrap settings-icon-wrap--primary">${icon('bell', 'i-sm')}</div>
+          <div>
+            <h2>Préférences</h2>
+            <p>Configure le comportement de l'app.</p>
+          </div>
+        </div>
         <div class="toggle-row">
           <div>
             <div class="toggle-label">Rappel quotidien</div>
             <div class="toggle-desc">Notification pour le check-in du soir</div>
           </div>
-          <button class="toggle-switch${settings.reminder ? ' on' : ''}" data-pref="reminder" role="switch" aria-checked="${!!settings.reminder}"></button>
+          <button class="toggle-switch${settings.reminder ? ' on' : ''}" data-pref="reminder" role="switch" aria-checked="${!!settings.reminder}" aria-label="Rappel quotidien"></button>
         </div>
         <div class="toggle-row">
           <div>
             <div class="toggle-label">Objectif streak à 30 jours</div>
             <div class="toggle-desc">Affiche une barre de progression vers 30j</div>
           </div>
-          <button class="toggle-switch${settings.streak30 ? ' on' : ''}" data-pref="streak30" role="switch" aria-checked="${!!settings.streak30}"></button>
+          <button class="toggle-switch${settings.streak30 ? ' on' : ''}" data-pref="streak30" role="switch" aria-checked="${!!settings.streak30}" aria-label="Objectif streak à 30 jours"></button>
         </div>
       </div>
 
       <div class="settings-section">
-        <h2>${icon('download', 'i-sm')} Exporter</h2>
-        <p>Télécharge toutes tes données en JSON pour les sauvegarder.</p>
-        <button class="btn btn--primary" id="btn-export">${icon('download', 'i-sm')} Exporter</button>
-      </div>
-
-      <div class="settings-section">
-        <h2>${icon('upload', 'i-sm')} Importer</h2>
-        <p>Restaure depuis un fichier JSON. Les données actuelles seront remplacées.</p>
+        <div class="settings-section-head">
+          <div class="settings-icon-wrap settings-icon-wrap--accent">${icon('save', 'i-sm')}</div>
+          <div>
+            <h2>Données</h2>
+            <p>Sauvegarde ou restaure tes habitudes.</p>
+          </div>
+        </div>
+        <div class="data-actions">
+          <button class="data-action-card" id="btn-export">
+            <div class="data-action-icon">${icon('download', 'i-sm')}</div>
+            <div class="data-action-info">
+              <span class="data-action-title">Exporter</span>
+              <span class="data-action-desc">Télécharger en JSON</span>
+            </div>
+          </button>
+          <button class="data-action-card" id="btn-import-trigger">
+            <div class="data-action-icon">${icon('upload', 'i-sm')}</div>
+            <div class="data-action-info">
+              <span class="data-action-title">Importer</span>
+              <span class="data-action-desc">Restaurer un fichier</span>
+            </div>
+          </button>
+        </div>
         <input type="file" id="file-import" accept=".json" style="display:none">
-        <button class="btn btn--secondary" id="btn-import">${icon('upload', 'i-sm')} Importer un fichier</button>
         <div id="import-status"></div>
       </div>
 
       <div class="settings-section settings-section--danger">
-        <h2>${icon('trash', 'i-sm')} Zone de danger</h2>
-        <p>Supprime définitivement toutes tes données. Cette action est irréversible.</p>
+        <div class="settings-section-head">
+          <div class="settings-icon-wrap settings-icon-wrap--danger">${icon('trash', 'i-sm')}</div>
+          <div>
+            <h2>Zone de danger</h2>
+            <p>Action irréversible, tes données seront perdues.</p>
+          </div>
+        </div>
         <button class="btn btn--danger" id="btn-reset">${icon('trash', 'i-sm')} Tout supprimer</button>
       </div>
 
@@ -171,7 +222,7 @@ export function render(container) {
 
   // --- Import ---
   const fileInput = container.querySelector('#file-import');
-  container.querySelector('#btn-import').addEventListener('click', () => fileInput.click());
+  container.querySelector('#btn-import-trigger').addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
