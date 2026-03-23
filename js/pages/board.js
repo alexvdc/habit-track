@@ -256,6 +256,11 @@ export function render(container) {
       ];
 
       if (zone === 'present') {
+        fields.push({ name: 'graceDays', label: 'Jours de gr\u00e2ce / mois', type: 'select', options: ['0', '1', '2', '3', '4'], value: '2' });
+        const presentHabits = getHabitsByZone('present');
+        if (presentHabits.length > 0) {
+          fields.push({ name: 'stackAfter', label: 'Apr\u00e8s quelle habitude ? (optionnel)', type: 'select', options: presentHabits.map(h => h.title), value: '' });
+        }
         fields.push({ name: 'metric', label: 'Suivi quotidien (optionnel)', type: 'text', placeholder: 'Ex : Nombre de pompes, minutes, pages...' });
       }
       if (zone === 'future') {
@@ -272,7 +277,12 @@ export function render(container) {
       });
 
       if (result && result.title) {
-        const extra = { why: result.why || '', vision: result.vision || '', metric: result.metric || '' };
+        let stackAfterId = null;
+        if (result.stackAfter) {
+          const found = getHabitsByZone('present').find(h => h.title === result.stackAfter);
+          if (found) stackAfterId = found.id;
+        }
+        const extra = { why: result.why || '', vision: result.vision || '', metric: result.metric || '', graceDays: parseInt(result.graceDays || '2', 10), stackAfter: stackAfterId };
         const habit = addHabit(result.title, zone, result.category || '', result.targetDate || null, result.frequency || null, extra);
         if (result.movedAt) {
           updateHabit(habit.id, { movedAt: result.movedAt });

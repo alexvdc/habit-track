@@ -1,6 +1,6 @@
 // js/components/habit-card.js — V2 habit card with dots, streak bars, check rings
 
-import { toggleCheckIn, moveHabit, deleteHabit, updateHabit, getCurrentStreak, getDaysSince, todayISO, loadData, saveData, getCategories, getScheduledToday, getWeeklyProgress, logMetric } from '../store.js';
+import { toggleCheckIn, moveHabit, deleteHabit, updateHabit, getCurrentStreak, getDaysSince, todayISO, loadData, saveData, getCategories, getScheduledToday, getWeeklyProgress, logMetric, getGraceDaysRemaining, getStackParent, getHabitsByZone } from '../store.js';
 import { escapeHTML, formatDateFR, getDayLetter } from '../utils.js';
 import { icon } from './icons.js';
 import { showToast } from './toast.js';
@@ -70,6 +70,23 @@ export function createHabitCard(habit, onUpdate, index = 0) {
     weekProgressHTML = `<span class="week-progress">${wp.done}/${wp.target} cette sem.</span>`;
   }
 
+  // --- Grace days badge ---
+  let graceBadgeHTML = '';
+  if (habit.zone === 'present' && (habit.graceDays ?? 2) > 0) {
+    const remaining = getGraceDaysRemaining(habit);
+    const total = habit.graceDays ?? 2;
+    graceBadgeHTML = `<span class="grace-badge" title="Jours de gr\u00e2ce restants ce mois">${icon('shield', 'i-sm')} ${remaining}/${total}</span>`;
+  }
+
+  // --- Stack link ---
+  let stackHTML = '';
+  if (habit.stackAfter) {
+    const parent = getStackParent(habit);
+    if (parent) {
+      stackHTML = `<div class="card-stack">${icon('link', 'i-sm')} Apr\u00e8s : ${escapeHTML(parent.title)}</div>`;
+    }
+  }
+
   // --- Body content varies by zone ---
   let bodyHTML = '';
   if (habit.zone === 'present') {
@@ -80,7 +97,7 @@ export function createHabitCard(habit, onUpdate, index = 0) {
     bodyHTML = `
       ${dayDotsHTML}
       <div class="streak-row">
-        <span class="streak-label">${streak > 0 ? icon('bolt', 'i-sm') : ''}${streak}j ${weekProgressHTML}</span>
+        <span class="streak-label">${streak > 0 ? icon('bolt', 'i-sm') : ''}${streak}j ${weekProgressHTML} ${graceBadgeHTML}</span>
         <div class="streak-track"><div class="streak-fill${isMilestone ? ' milestone' : ''}" style="width:${pct}%"></div></div>
         <span class="streak-target">${STREAK_TARGET}j</span>
         <button class="check-ring ${isChecked ? 'done' : ''}${disabledRing ? ' disabled' : ''}" data-action="toggle" aria-label="${isChecked ? 'Décocher' : 'Valider'}"${disabledRing ? ' title="Non prévu aujourd\'hui"' : ''}>
@@ -138,6 +155,7 @@ export function createHabitCard(habit, onUpdate, index = 0) {
       <button class="card-menu-btn" data-action="menu" aria-label="Actions" aria-haspopup="true" aria-expanded="false">${icon('moreVertical', 'i-sm')}</button>
     </div>
     ${habit.why ? `<div class="card-why">${escapeHTML(habit.why)}</div>` : ''}
+    ${stackHTML}
     <div class="card-body">${bodyHTML}</div>
     <div class="card-heatmap" style="display:none"></div>
     <div class="card-actions">${actionsHTML}</div>
@@ -327,6 +345,12 @@ export function createHabitCard(habit, onUpdate, index = 0) {
         { name: 'frequency', label: 'Fréquence', type: 'frequency', value: currentFreq },
       ];
       if (habit.zone === 'present') {
+        fields.push({ name: 'graceDays', label: 'Jours de gr\u00e2ce / mois', type: 'select', options: ['0', '1', '2', '3', '4'], value: String(habit.graceDays ?? 2) });
+        const otherPresent = getHabitsByZone('present').filter(h => h.id !== habit.id);
+        if (otherPresent.length > 0) {
+          const stackParent = otherPresent.find(h => h.id === habit.stackAfter);
+          fields.push({ name: 'stackAfter', label: 'Apr\u00e8s quelle habitude ? (optionnel)', type: 'select', options: otherPresent.map(h => h.title), value: stackParent ? stackParent.title : '' });
+        }
         fields.push({ name: 'metric', label: 'Suivi quotidien (optionnel)', type: 'text', placeholder: 'Ex : Nombre de pompes, minutes...', value: habit.metric || '' });
       }
       fields.push({ name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Notes libres...', value: habit.notes || '' });
@@ -345,6 +369,11 @@ export function createHabitCard(habit, onUpdate, index = 0) {
       if (result && result.title) {
         const updates = { title: result.title, category: result.category || '', notes: result.notes || '', why: result.why || '' };
         if (result.frequency) updates.frequency = result.frequency;
+        if (result.graceDays !== undefined) updates.graceDays = parseInt(result.graceDays || '2', 10);
+        if (result.stackAfter !== undefined) {
+          const found = getHabitsByZone('present').find(h => h.title === result.stackAfter);
+          updates.stackAfter = found ? found.id : null;
+        }
         if (result.metric !== undefined) updates.metric = result.metric || '';
         if (habit.zone === 'future') {
           updates.targetDate = result.targetDate || null;

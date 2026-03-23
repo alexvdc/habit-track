@@ -101,7 +101,9 @@ function addHabit(title, zone, category = '', targetDate = null, frequency = nul
     vision: extra.vision || '',
     metric: extra.metric || '',
     metricLog: {},
-    acquiredReflection: ''
+    acquiredReflection: '',
+    graceDays: extra.graceDays ?? 2,
+    stackAfter: extra.stackAfter || null
   };
   data.habits.push(habit);
   saveData(data);
@@ -120,6 +122,10 @@ function updateHabit(id, updates) {
 function deleteHabit(id) {
   const data = loadData();
   data.habits = data.habits.filter(h => h.id !== id);
+  // Clean up stale stackAfter references
+  for (const h of data.habits) {
+    if (h.stackAfter === id) h.stackAfter = null;
+  }
   saveData(data);
 }
 
@@ -130,9 +136,22 @@ function getHabitsByZone(zone) {
 
 function moveHabit(id, newZone) {
   const data = loadData();
+  // Clean up stack references when leaving present
+  if (newZone !== 'present') {
+    for (const h of data.habits) {
+      if (h.stackAfter === id) h.stackAfter = null;
+    }
+    saveData(data);
+  }
   const zoneHabits = data.habits.filter(h => h.zone === newZone);
   const maxOrder = zoneHabits.reduce((max, h) => Math.max(max, h.order ?? 0), -1);
-  return updateHabit(id, { zone: newZone, movedAt: todayISO(), order: maxOrder + 1 });
+  return updateHabit(id, { zone: newZone, movedAt: todayISO(), order: maxOrder + 1, ...(newZone !== 'present' ? { stackAfter: null } : {}) });
+}
+
+function getStackParent(habit) {
+  if (!habit.stackAfter) return null;
+  const data = loadData();
+  return data.habits.find(h => h.id === habit.stackAfter && h.zone === 'present') || null;
 }
 
 function toggleCheckIn(id, date = todayISO()) {
@@ -206,6 +225,36 @@ function getWeeklyProgress(habit) {
   return { done, target: weekDates.length };
 }
 
+// --- Grace days helpers ---
+
+function getGraceDaysUsed(habit) {
+  const graceDays = habit.graceDays ?? 2;
+  if (graceDays === 0) return { used: 0, total: 0 };
+
+  const targetMonth = todayISO().slice(0, 7);
+  const checkSet = new Set(habit.checkIns || []);
+  const year = parseInt(targetMonth.slice(0, 4), 10);
+  const mon = parseInt(targetMonth.slice(5, 7), 10);
+  const daysInMonth = new Date(year, mon, 0).getDate();
+  const today = todayISO();
+
+  let missed = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = `${targetMonth}-${String(d).padStart(2, '0')}`;
+    if (ds > today) break;
+    if (ds < (habit.movedAt || habit.createdAt)) continue;
+    if (!isScheduledOn(habit, ds)) continue;
+    if (!checkSet.has(ds)) missed++;
+  }
+
+  return { used: Math.min(missed, graceDays), total: graceDays };
+}
+
+function getGraceDaysRemaining(habit) {
+  const gd = getGraceDaysUsed(habit);
+  return gd.total - gd.used;
+}
+
 // --- Streak calculation ---
 
 function getCurrentStreak(habit) {
@@ -217,10 +266,13 @@ function getCurrentStreak(habit) {
   }
 
   // For daily & specific-days: count consecutive scheduled days checked
+  // Grace days: missed days use a grace day instead of breaking the streak
+  const graceDays = habit.graceDays ?? 2;
   const checkSet = new Set(habit.checkIns);
   const today = todayISO();
   let streak = 0;
   let cursor = new Date(today + 'T00:00:00');
+  const graceUsedThisMonth = {};
 
   // Allow today to be unchecked if it's still today
   if (!checkSet.has(today)) {
@@ -229,19 +281,36 @@ function getCurrentStreak(habit) {
     } else {
       // Not checked today — start from yesterday
       cursor.setDate(cursor.getDate() - 1);
-      // If yesterday also wasn't checked (and was scheduled), streak is 0
       const yesterday = _formatDate(cursor);
-      if (isScheduledOn(habit, yesterday) && !checkSet.has(yesterday)) return 0;
+      if (isScheduledOn(habit, yesterday) && !checkSet.has(yesterday)) {
+        // Try grace day for yesterday
+        const ym = yesterday.slice(0, 7);
+        if (!graceUsedThisMonth[ym]) graceUsedThisMonth[ym] = 0;
+        if (graceDays > 0 && graceUsedThisMonth[ym] < graceDays) {
+          graceUsedThisMonth[ym]++;
+        } else {
+          return 0;
+        }
+      }
     }
   }
 
   for (let i = 0; i < 365; i++) {
     const ds = _formatDate(cursor);
+    if (ds < (habit.movedAt || habit.createdAt)) break;
     if (isScheduledOn(habit, ds)) {
       if (checkSet.has(ds)) {
         streak++;
       } else {
-        break;
+        // Try to use a grace day
+        const ym = ds.slice(0, 7);
+        if (!graceUsedThisMonth[ym]) graceUsedThisMonth[ym] = 0;
+        if (graceDays > 0 && graceUsedThisMonth[ym] < graceDays) {
+          graceUsedThisMonth[ym]++;
+          // Grace day used — streak survives but doesn't increment
+        } else {
+          break;
+        }
       }
     }
     cursor.setDate(cursor.getDate() - 1);
@@ -463,6 +532,7 @@ export {
   getHabitsByZone, moveHabit, toggleCheckIn, logMetric, reorderHabit,
   getCurrentStreak, getDaysSince,
   getScheduledToday, isScheduledOn, getWeeklyProgress,
+  getGraceDaysUsed, getGraceDaysRemaining, getStackParent,
   addReflection, updateReflection, getReflections, getReflectionForCurrentWeek,
   getMoodLog, setMood, getMoodForDate,
   exportData, importData, resetData, getStats,
