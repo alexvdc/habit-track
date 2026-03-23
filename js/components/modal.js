@@ -41,9 +41,11 @@ export function showModal(options) {
         if (val.type === 'specific' && val.days) freqStates[f.name].days = [...val.days];
         inputHTML = _buildFrequencyHTML(f.name, val);
       } else if (f.type === 'select') {
-        const opts = (f.options || []).map(o =>
-          `<option value="${o}"${f.value === o ? ' selected' : ''}>${o}</option>`
-        ).join('');
+        const opts = (f.options || []).map(o => {
+          const val = typeof o === 'object' ? o.value : o;
+          const label = typeof o === 'object' ? o.label : o;
+          return `<option value="${val}"${f.value === val ? ' selected' : ''}>${label}</option>`;
+        }).join('');
         inputHTML = `<select id="${fieldId}" name="${f.name}" ${f.required ? 'required' : ''}><option value="">— Choisir —</option>${opts}</select>`;
       } else if (f.type === 'textarea') {
         inputHTML = `<textarea id="${fieldId}" name="${f.name}" ${f.required ? 'required' : ''} placeholder="${f.placeholder || ''}" rows="3">${f.value || ''}</textarea>`;

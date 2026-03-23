@@ -96,12 +96,12 @@ function addHabit(title, zone, category = '', targetDate = null, frequency = nul
     frequency: frequency || { type: 'daily' },
     order: maxOrder + 1,
     checkIns: [],
-    notes: '',
+    notes: extra.notes || '',
     why: extra.why || '',
     vision: extra.vision || '',
     metric: extra.metric || '',
     metricLog: {},
-    acquiredReflection: '',
+    acquiredReflection: extra.acquiredReflection || '',
     graceDays: extra.graceDays ?? 2,
     stackAfter: extra.stackAfter || null
   };
@@ -157,7 +157,7 @@ function getStackParent(habit) {
 function toggleCheckIn(id, date = todayISO()) {
   const data = loadData();
   const habit = data.habits.find(h => h.id === id);
-  if (!habit) return null;
+  if (!habit || habit.zone !== 'present') return null;
   const idx = habit.checkIns.indexOf(date);
   if (idx === -1) {
     habit.checkIns.push(date);
@@ -486,19 +486,21 @@ function getMonthlyStats(monthOf) {
 
   for (const h of present) {
     const checkSet = new Set(h.checkIns || []);
-    let graceCount = 0;
+    const graceDays = h.graceDays ?? 2;
+    let missed = 0;
     for (let d = 1; d <= daysInMonth; d++) {
       const ds = `${monthOf}-${String(d).padStart(2, '0')}`;
       if (ds > today) break;
+      if (ds < (h.movedAt || h.createdAt)) continue;
       if (!isScheduledOn(h, ds)) continue;
       totalPossible++;
       if (checkSet.has(ds)) {
         totalChecked++;
-      } else if (graceCount < (h.graceDays ?? 2)) {
-        graceCount++;
-        totalGraceUsed++;
+      } else {
+        missed++;
       }
     }
+    totalGraceUsed += Math.min(missed, graceDays);
   }
 
   const completionRate = totalPossible > 0 ? Math.round((totalChecked / totalPossible) * 100) : 0;
@@ -594,11 +596,11 @@ function getStats() {
     const freq = h.frequency || { type: 'daily' };
     if (freq.type === 'weekly') {
       totalPossible += freq.count || 1;
-      totalChecked += weekDates.filter(d => h.checkIns.includes(d)).length;
+      totalChecked += weekDates.filter(d => (h.checkIns || []).includes(d)).length;
     } else {
       const scheduled = weekDates.filter(d => isScheduledOn(h, d));
       totalPossible += scheduled.length;
-      totalChecked += scheduled.filter(d => h.checkIns.includes(d)).length;
+      totalChecked += scheduled.filter(d => (h.checkIns || []).includes(d)).length;
     }
   }
   const weeklyRate = totalPossible > 0 ? Math.round((totalChecked / totalPossible) * 100) : 0;
@@ -610,7 +612,7 @@ function getStats() {
     const d = new Date(todayISO() + 'T00:00:00');
     d.setDate(d.getDate() - i);
     const ds = _formatDate(d);
-    const count = allHabits.reduce((sum, h) => sum + (h.checkIns.includes(ds) ? 1 : 0), 0);
+    const count = allHabits.reduce((sum, h) => sum + ((h.checkIns || []).includes(ds) ? 1 : 0), 0);
     last30.push({ date: ds, count });
   }
 

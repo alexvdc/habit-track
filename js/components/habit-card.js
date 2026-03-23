@@ -348,8 +348,7 @@ export function createHabitCard(habit, onUpdate, index = 0) {
         fields.push({ name: 'graceDays', label: 'Jours de gr\u00e2ce / mois', type: 'select', options: ['0', '1', '2', '3', '4'], value: String(habit.graceDays ?? 2) });
         const otherPresent = getHabitsByZone('present').filter(h => h.id !== habit.id);
         if (otherPresent.length > 0) {
-          const stackParent = otherPresent.find(h => h.id === habit.stackAfter);
-          fields.push({ name: 'stackAfter', label: 'Apr\u00e8s quelle habitude ? (optionnel)', type: 'select', options: otherPresent.map(h => h.title), value: stackParent ? stackParent.title : '' });
+          fields.push({ name: 'stackAfter', label: 'Apr\u00e8s quelle habitude ? (optionnel)', type: 'select', options: otherPresent.map(h => ({ value: h.id, label: h.title })), value: habit.stackAfter || '' });
         }
         fields.push({ name: 'metric', label: 'Suivi quotidien (optionnel)', type: 'text', placeholder: 'Ex : Nombre de pompes, minutes...', value: habit.metric || '' });
       }
@@ -371,8 +370,7 @@ export function createHabitCard(habit, onUpdate, index = 0) {
         if (result.frequency) updates.frequency = result.frequency;
         if (result.graceDays !== undefined) updates.graceDays = parseInt(result.graceDays || '2', 10);
         if (result.stackAfter !== undefined) {
-          const found = getHabitsByZone('present').find(h => h.title === result.stackAfter);
-          updates.stackAfter = found ? found.id : null;
+          updates.stackAfter = result.stackAfter || null;
         }
         if (result.metric !== undefined) updates.metric = result.metric || '';
         if (habit.zone === 'future') {

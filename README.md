@@ -17,16 +17,28 @@ Les habitudes migrent d'une zone a l'autre au fil du temps. Une habitude Future 
 - **Tableau temporel** : vue principale avec 3 colonnes (Passe | Present | Futur)
 - **Check-in quotidien** : cocher ses habitudes du jour en un clic
 - **Suivi de streaks** : voir combien de jours consecutifs on tient une habitude
-- **Dashboard** : statistiques, graphique des 30 derniers jours, taux de reussite
+- **Grace days** : jours de grace configurables par habitude (0-4/mois) pour ne pas casser un streak sur un oubli
+- **Habit stacking** : chainer ses habitudes presentes entre elles (ex : mediter apres le cafe)
+- **Check-in emotionnel** : noter son energie du jour (5 niveaux) avec une note optionnelle
+- **Dashboard** : statistiques, graphique des 30 derniers jours, taux de reussite, courbe d'energie
 - **Reflexion hebdomadaire** : journal structure pour faire le point chaque semaine
+- **Bilan mensuel** : stats du mois (completion, streaks, grace days, energie) + 3 questions coaching
+- **Heatmap 90 jours** : vue calendrier par habitude avec coloration des grace days
+- **Drag & drop** : reorganiser et deplacer ses habitudes entre zones
+- **Frequences personnalisees** : quotidien, jours specifiques, ou X fois par semaine
+- **Suivi de metriques** : valeur quotidienne optionnelle par habitude (pompes, pages, minutes...)
 - **Import/Export JSON** : sauvegarder et restaurer ses donnees
+- **Notifications** : rappels quotidiens configurables
+- **PWA** : installable sur mobile, fonctionne hors-ligne
 
 ## Tech
 
 - Vanilla HTML / CSS / JavaScript (zero dependance, zero build step)
 - Donnees stockees en localStorage (tout reste dans le navigateur)
 - Routing SPA hash-based
-- Design responsive (fonctionne sur mobile)
+- Service Worker network-first (mises a jour instantanees)
+- Design responsive (sidebar desktop, bottom nav mobile)
+- 3 themes : Teal (defaut), Light, Dark
 
 ## Lancer l'app
 
@@ -44,18 +56,27 @@ Puis ouvrir `http://localhost:3000` dans le navigateur.
 habit-track/
 ├── index.html              # Point d'entree
 ├── css/styles.css          # Design system complet
+├── sw.js                   # Service Worker (cache + offline)
+├── manifest.json           # Manifest PWA
 ├── js/
 │   ├── app.js              # Router SPA
-│   ├── store.js            # Donnees localStorage
-│   ├── utils.js            # Utilitaires (escapeHTML)
+│   ├── store.js            # Donnees localStorage + logique metier
+│   ├── utils.js            # Utilitaires (dates, escapeHTML)
 │   ├── components/
-│   │   ├── nav.js          # Barre de navigation
-│   │   ├── habit-card.js   # Carte d'habitude
-│   │   └── chart.js        # Graphique SVG
+│   │   ├── nav.js          # Sidebar + bottom nav mobile
+│   │   ├── habit-card.js   # Carte d'habitude (check-in, streaks, metriques)
+│   │   ├── heatmap.js      # Mini heatmap 90 jours
+│   │   ├── icons.js        # Bibliotheque d'icones SVG
+│   │   ├── modal.js        # Modal generique (formulaires)
+│   │   ├── toast.js        # Notifications toast avec undo
+│   │   ├── chart.js        # Graphique SVG (dashboard)
+│   │   ├── celebration.js  # Animation confettis (milestones)
+│   │   └── notifications.js # Rappels push
 │   └── pages/
-│       ├── board.js        # Tableau Passe/Present/Futur
-│       ├── dashboard.js    # Stats & graphiques
+│       ├── board.js        # Tableau Passe/Present/Futur + mood widget
+│       ├── dashboard.js    # Stats, graphiques & courbe d'energie
 │       ├── weekly.js       # Reflexion hebdomadaire
-│       └── settings.js     # Import/Export/Reset
-└── docs/plans/             # Documents de design
+│       ├── monthly.js      # Bilan mensuel + stats
+│       └── settings.js     # Themes, import/export, notifications
+└── docs/plans/             # Documents de design (gitignored)
 ```
