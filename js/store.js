@@ -430,6 +430,103 @@ function getMoodForDate(date) {
   return (data.moodLog || {})[date] || null;
 }
 
+// --- Monthly Reviews ---
+
+function addMonthlyReview(monthOf, bestHabit, challenges, nextGoal) {
+  const data = loadData();
+  if (!data.monthlyReviews) data.monthlyReviews = [];
+  const review = {
+    id: generateId(),
+    monthOf,
+    bestHabit,
+    challenges,
+    nextGoal,
+    createdAt: todayISO()
+  };
+  data.monthlyReviews.push(review);
+  saveData(data);
+  return review;
+}
+
+function updateMonthlyReview(id, updates) {
+  const data = loadData();
+  if (!data.monthlyReviews) return null;
+  const idx = data.monthlyReviews.findIndex(r => r.id === id);
+  if (idx === -1) return null;
+  Object.assign(data.monthlyReviews[idx], updates);
+  saveData(data);
+  return data.monthlyReviews[idx];
+}
+
+function getMonthlyReviews() {
+  const data = loadData();
+  return (data.monthlyReviews || []).sort((a, b) => b.monthOf.localeCompare(a.monthOf));
+}
+
+function getMonthlyReviewFor(monthOf) {
+  const data = loadData();
+  return (data.monthlyReviews || []).find(r => r.monthOf === monthOf) || null;
+}
+
+function getCurrentMonth() {
+  return todayISO().slice(0, 7);
+}
+
+function getMonthlyStats(monthOf) {
+  const data = loadData();
+  const present = data.habits.filter(h => h.zone === 'present');
+  const year = parseInt(monthOf.slice(0, 4), 10);
+  const mon = parseInt(monthOf.slice(5, 7), 10);
+  const daysInMonth = new Date(year, mon, 0).getDate();
+  const today = todayISO();
+
+  let totalPossible = 0;
+  let totalChecked = 0;
+  let totalGraceUsed = 0;
+
+  for (const h of present) {
+    const checkSet = new Set(h.checkIns || []);
+    let graceCount = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const ds = `${monthOf}-${String(d).padStart(2, '0')}`;
+      if (ds > today) break;
+      if (!isScheduledOn(h, ds)) continue;
+      totalPossible++;
+      if (checkSet.has(ds)) {
+        totalChecked++;
+      } else if (graceCount < (h.graceDays ?? 2)) {
+        graceCount++;
+        totalGraceUsed++;
+      }
+    }
+  }
+
+  const completionRate = totalPossible > 0 ? Math.round((totalChecked / totalPossible) * 100) : 0;
+
+  // Best streak this month
+  let bestStreak = 0;
+  for (const h of present) {
+    const s = getCurrentStreak(h);
+    if (s > bestStreak) bestStreak = s;
+  }
+
+  // Mood average
+  const moodLog = data.moodLog || {};
+  let moodSum = 0;
+  let moodCount = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = `${monthOf}-${String(d).padStart(2, '0')}`;
+    if (ds > today) break;
+    if (moodLog[ds]) {
+      moodSum += moodLog[ds].level;
+      moodCount++;
+    }
+  }
+  const avgMood = moodCount > 0 ? (moodSum / moodCount).toFixed(1) : null;
+
+  return { completionRate, bestStreak, totalGraceUsed, avgMood, totalChecked, totalPossible };
+}
+
 // --- Import / Export ---
 
 function exportData() {
@@ -535,6 +632,7 @@ export {
   getGraceDaysUsed, getGraceDaysRemaining, getStackParent,
   addReflection, updateReflection, getReflections, getReflectionForCurrentWeek,
   getMoodLog, setMood, getMoodForDate,
+  addMonthlyReview, updateMonthlyReview, getMonthlyReviews, getMonthlyReviewFor, getCurrentMonth, getMonthlyStats,
   exportData, importData, resetData, getStats,
   getSettings, updateSettings, getCategories,
   todayISO, getMonday, _formatDate

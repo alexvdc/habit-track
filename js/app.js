@@ -21,6 +21,7 @@ const routes = {
   '#/board':     () => import('./pages/board.js').then(m => m.render(appEl)),
   '#/dashboard': () => import('./pages/dashboard.js').then(m => m.render(appEl)),
   '#/weekly':    () => import('./pages/weekly.js').then(m => m.render(appEl)),
+  '#/monthly':   () => import('./pages/monthly.js').then(m => m.render(appEl)),
   '#/settings':  () => import('./pages/settings.js').then(m => m.render(appEl)),
 };
 

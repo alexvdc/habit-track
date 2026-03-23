@@ -7,6 +7,7 @@ const ROUTES = [
   { hash: '#/board',     label: 'Tableau',    iconName: 'grid',     badge: true },
   { hash: '#/dashboard', label: 'Dashboard',  iconName: 'barChart' },
   { hash: '#/weekly',    label: 'Réflexion',  iconName: 'edit' },
+  { hash: '#/monthly',   label: 'Bilan',      iconName: 'calendar' },
   { hash: '#/settings',  label: 'Réglages',   iconName: 'settings' },
 ];
 

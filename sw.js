@@ -1,4 +1,4 @@
-const CACHE_NAME = 'habittrack-v7';
+const CACHE_NAME = 'habittrack-v8';
 const ASSETS = [
   './',
   './index.html',
@@ -9,6 +9,7 @@ const ASSETS = [
   './js/pages/board.js',
   './js/pages/dashboard.js',
   './js/pages/weekly.js',
+  './js/pages/monthly.js',
   './js/pages/settings.js',
   './js/components/chart.js',
   './js/components/habit-card.js',
