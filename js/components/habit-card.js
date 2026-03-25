@@ -67,7 +67,8 @@ export function createHabitCard(habit, onUpdate, index = 0) {
   let weekProgressHTML = '';
   if (freq.type !== 'daily' && habit.zone === 'present') {
     const wp = getWeeklyProgress(habit);
-    weekProgressHTML = `<span class="week-progress">${wp.done}/${wp.target} cette sem.</span>`;
+    const isBonus = wp.done > wp.target;
+    weekProgressHTML = `<span class="week-progress${isBonus ? ' week-progress--bonus' : ''}">${wp.done}/${wp.target} cette sem.${isBonus ? ' \u2B50' : ''}</span>`;
   }
 
   // --- Grace days badge ---
@@ -91,15 +92,18 @@ export function createHabitCard(habit, onUpdate, index = 0) {
   let bodyHTML = '';
   if (habit.zone === 'present') {
     const streak = getCurrentStreak(habit);
-    const pct = Math.min(Math.round((streak / STREAK_TARGET) * 100), 100);
-    const isMilestone = [7, 14, 21, 30].includes(streak);
+    const isWeekly = freq.type === 'weekly';
+    const streakUnit = isWeekly ? 's' : 'j';
+    const streakTarget = isWeekly ? Math.ceil(STREAK_TARGET / 7) : STREAK_TARGET;
+    const pct = Math.min(Math.round((streak / streakTarget) * 100), 100);
+    const isMilestone = isWeekly ? [2, 4, 8, 12].includes(streak) : [7, 14, 21, 30].includes(streak);
     const disabledRing = !isScheduled && freq.type === 'specific';
     bodyHTML = `
       ${dayDotsHTML}
       <div class="streak-row">
-        <span class="streak-label">${streak > 0 ? icon('bolt', 'i-sm') : ''}${streak}j ${weekProgressHTML} ${graceBadgeHTML}</span>
+        <span class="streak-label">${streak > 0 ? icon('bolt', 'i-sm') : ''}${streak}${streakUnit} ${weekProgressHTML} ${graceBadgeHTML}</span>
         <div class="streak-track"><div class="streak-fill${isMilestone ? ' milestone' : ''}" style="width:${pct}%"></div></div>
-        <span class="streak-target">${STREAK_TARGET}j</span>
+        <span class="streak-target">${streakTarget}${streakUnit}</span>
         <button class="check-ring ${isChecked ? 'done' : ''}${disabledRing ? ' disabled' : ''}" data-action="toggle" aria-label="${isChecked ? 'Décocher' : 'Valider'}"${disabledRing ? ' title="Non prévu aujourd\'hui"' : ''}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${isChecked ? '3' : '2'}" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 6 9 17 4 12"/>

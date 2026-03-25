@@ -227,16 +227,66 @@ function getWeeklyProgress(habit) {
 
 // --- Grace days helpers ---
 
+// Returns { shieldable, total } missed weeks
+// shieldable: weeks where user tried (at least 1 check-in) but didn't reach target
+//   For 1x/week habits, any miss is shieldable (no middle ground)
+// total: all missed weeks
+function _countWeeklyMissedWeeks(habit, startDate, endDate) {
+  const freq = habit.frequency || { type: 'weekly', count: 1 };
+  const target = freq.count || 1;
+  const checkSet = new Set(habit.checkIns || []);
+  const currentWeekMonday = getMonday(todayISO());
+  let shieldable = 0;
+  let total = 0;
+
+  // Find the first Monday on or before startDate
+  let monday = new Date(getMonday(startDate) + 'T00:00:00');
+
+  while (true) {
+    const mondayStr = _formatDate(monday);
+    if (mondayStr > endDate) break;
+    // Skip the current (incomplete) week
+    if (mondayStr === currentWeekMonday) { monday.setDate(monday.getDate() + 7); continue; }
+    let weekCount = 0;
+    for (let d = 0; d < 7; d++) {
+      const day = new Date(monday);
+      day.setDate(day.getDate() + d);
+      const ds = _formatDate(day);
+      if (ds > endDate) break;
+      if (ds < (habit.movedAt || habit.createdAt)) continue;
+      if (checkSet.has(ds)) weekCount++;
+    }
+    if (weekCount < target) {
+      total++;
+      // Shield covers close misses: 1x/week any miss is ok, otherwise must have tried
+      if (target === 1 || weekCount > 0) shieldable++;
+    }
+    monday.setDate(monday.getDate() + 7);
+  }
+  return { shieldable, total };
+}
+
 function getGraceDaysUsed(habit) {
   const graceDays = habit.graceDays ?? 2;
   if (graceDays === 0) return { used: 0, total: 0 };
 
+  const freq = habit.frequency || { type: 'daily' };
   const targetMonth = todayISO().slice(0, 7);
+  const today = todayISO();
+
+  // Weekly habits: count missed completed weeks, not individual days
+  // Only shieldable misses (where user tried) consume grace days
+  if (freq.type === 'weekly') {
+    const monthStart = `${targetMonth}-01`;
+    const { shieldable } = _countWeeklyMissedWeeks(habit, monthStart, today);
+    return { used: Math.min(shieldable, graceDays), total: graceDays };
+  }
+
+  // Daily / specific-days: count individual missed days
   const checkSet = new Set(habit.checkIns || []);
   const year = parseInt(targetMonth.slice(0, 4), 10);
   const mon = parseInt(targetMonth.slice(5, 7), 10);
   const daysInMonth = new Date(year, mon, 0).getDate();
-  const today = todayISO();
 
   let missed = 0;
   for (let d = 1; d <= daysInMonth; d++) {
@@ -321,8 +371,10 @@ function getCurrentStreak(habit) {
 function _getWeeklyStreak(habit) {
   const freq = habit.frequency || { type: 'weekly', count: 1 };
   const target = freq.count || 1;
+  const graceDays = habit.graceDays ?? 2;
   const checkSet = new Set(habit.checkIns);
   let streak = 0;
+  const graceUsedThisMonth = {};
 
   // Start from current week, go backwards
   let weekMonday = new Date(getMonday(todayISO()) + 'T00:00:00');
@@ -345,7 +397,19 @@ function _getWeeklyStreak(habit) {
     if (weekCount >= target) {
       streak++;
     } else {
-      break;
+      // Shield only covers close misses: 1x/week any miss, otherwise must have tried
+      const isShieldable = target === 1 || weekCount > 0;
+      if (isShieldable) {
+        const ym = mondayStr.slice(0, 7);
+        if (!graceUsedThisMonth[ym]) graceUsedThisMonth[ym] = 0;
+        if (graceDays > 0 && graceUsedThisMonth[ym] < graceDays) {
+          graceUsedThisMonth[ym]++;
+        } else {
+          break;
+        }
+      } else {
+        break; // Total failure (0 effort) — streak breaks, no shield
+      }
     }
     weekMonday.setDate(weekMonday.getDate() - 7);
   }
@@ -487,6 +551,7 @@ function getMonthlyStats(monthOf) {
   for (const h of present) {
     const checkSet = new Set(h.checkIns || []);
     const graceDays = h.graceDays ?? 2;
+    const freq = h.frequency || { type: 'daily' };
     let missed = 0;
     for (let d = 1; d <= daysInMonth; d++) {
       const ds = `${monthOf}-${String(d).padStart(2, '0')}`;
@@ -500,7 +565,15 @@ function getMonthlyStats(monthOf) {
         missed++;
       }
     }
-    totalGraceUsed += Math.min(missed, graceDays);
+    // Weekly habits: grace = shieldable missed weeks, not individual days
+    if (freq.type === 'weekly') {
+      const monthStart = `${monthOf}-01`;
+      const endDate = monthOf === todayISO().slice(0, 7) ? today : `${monthOf}-${String(daysInMonth).padStart(2, '0')}`;
+      const { shieldable } = _countWeeklyMissedWeeks(h, monthStart, endDate);
+      totalGraceUsed += Math.min(shieldable, graceDays);
+    } else {
+      totalGraceUsed += Math.min(missed, graceDays);
+    }
   }
 
   const completionRate = totalPossible > 0 ? Math.round((totalChecked / totalPossible) * 100) : 0;
