@@ -218,8 +218,9 @@ h3 { font-size: 0.9375rem; }
 .card-body { margin-bottom: 12px; }
 .streak-row { display: flex; align-items: center; gap: 10px; }
 .streak-label { font-weight: 700; font-size: 14px; color: var(--accent); display: flex; align-items: center; gap: 4px; white-space: nowrap; }
-.streak-track { flex: 1; height: 6px; background: var(--primary-100); border-radius: 3px; overflow: hidden; }
-.streak-fill { height: 100%; background: linear-gradient(90deg, var(--primary-200), var(--primary)); border-radius: 3px; transition: width 300ms ease; }
+.streak-track { flex: 1; height: 8px; background: var(--primary-100); border-radius: 4px; overflow: hidden; }
+.streak-fill { height: 100%; background: linear-gradient(90deg, var(--primary-200), var(--primary)); border-radius: 4px; transition: width 300ms ease; }
+.streak-sep { color: var(--border); font-weight: 400; }
 .streak-target { font-size: 11px; color: var(--text-muted); font-weight: 600; }
 .meta-text { font-size: 13px; font-weight: 600; }
 .meta-text--past { color: var(--past-dark); }
@@ -751,8 +752,8 @@ details[open] .tl-summary::before { transform: rotate(90deg); }
   .streak-row { gap: 6px; }
   .streak-label { font-size: 12px; }
   .streak-target { font-size: 10px; }
-  .check-ring { width: 44px; height: 44px; }
-  .check-ring svg { width: 20px; height: 20px; }
+  .check-ring { width: 48px; height: 48px; }
+  .check-ring svg { width: 22px; height: 22px; }
   .card-actions { display: none; }
   .search-input { font-size: 16px; } /* Prevents iOS auto-zoom on focus */
   .card-menu-btn {

@@ -101,7 +101,7 @@ export function createHabitCard(habit, onUpdate, index = 0) {
     bodyHTML = `
       ${dayDotsHTML}
       <div class="streak-row">
-        <span class="streak-label">${streak > 0 ? icon('bolt', 'i-sm') : ''}${streak}${streakUnit} ${weekProgressHTML} ${graceBadgeHTML}</span>
+        <span class="streak-label">${streak > 0 ? icon('bolt', 'i-sm') : ''}${streak}${streakUnit}${weekProgressHTML ? ` <span class="streak-sep">·</span> ${weekProgressHTML}` : ''}${graceBadgeHTML ? ` <span class="streak-sep">·</span> ${graceBadgeHTML}` : ''}</span>
         <div class="streak-track"><div class="streak-fill${isMilestone ? ' milestone' : ''}" style="width:${pct}%"></div></div>
         <span class="streak-target">${streakTarget}${streakUnit}</span>
         <button class="check-ring ${isChecked ? 'done' : ''}${disabledRing ? ' disabled' : ''}" data-action="toggle" aria-label="${isChecked ? 'Décocher' : 'Valider'}"${disabledRing ? ' title="Non prévu aujourd\'hui"' : ''}>
