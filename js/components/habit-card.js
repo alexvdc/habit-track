@@ -144,6 +144,8 @@ export function createHabitCard(habit, onUpdate, index = 0) {
   let menuHTML = '';
   if (canLeft) menuHTML += `<button class="card-menu-item" data-action="move-left" role="menuitem">${icon('chevronUp', 'i-sm')} ${ZONE_LABELS[ZONES[zoneIdx - 1]]}</button>`;
   if (canRight) menuHTML += `<button class="card-menu-item" data-action="move-right" role="menuitem">${icon('chevronDown', 'i-sm')} ${ZONE_LABELS[ZONES[zoneIdx + 1]]}</button>`;
+  if (habit.notes) menuHTML += `<button class="card-menu-item" data-action="show-notes" role="menuitem">${icon('note', 'i-sm')} Notes</button>`;
+  if (habit.zone === 'present') menuHTML += `<button class="card-menu-item" data-action="toggle-heatmap" role="menuitem">${icon('calendar', 'i-sm')} Historique</button>`;
   menuHTML += `<button class="card-menu-item" data-action="edit" role="menuitem">${icon('edit', 'i-sm')} Modifier</button>`;
   menuHTML += `<button class="card-menu-item card-menu-item--del" data-action="delete" role="menuitem">${icon('trash', 'i-sm')} Supprimer</button>`;
 
