@@ -6,7 +6,6 @@ const DEFAULT_DATA = {
   habits: [],
   reflections: [],
   monthlyReviews: [],
-  moodLog: {},
   settings: {
     exportVersion: 1,
     theme: 'teal',
@@ -52,7 +51,6 @@ function loadData() {
       habits: data.habits || [],
       reflections: data.reflections || [],
       monthlyReviews: data.monthlyReviews || [],
-      moodLog: data.moodLog || {},
       settings: { ...DEFAULT_DATA.settings, ...data.settings }
     };
 
@@ -476,24 +474,6 @@ function getReflectionForCurrentWeek() {
   return loadData().reflections.find(r => r.weekOf === monday) || null;
 }
 
-// --- Mood log ---
-
-function getMoodLog() {
-  return loadData().moodLog || {};
-}
-
-function setMood(date, level, note = '') {
-  const data = loadData();
-  if (!data.moodLog) data.moodLog = {};
-  data.moodLog[date] = { level, note };
-  saveData(data);
-}
-
-function getMoodForDate(date) {
-  const data = loadData();
-  return (data.moodLog || {})[date] || null;
-}
-
 // --- Monthly Reviews ---
 
 function addMonthlyReview(monthOf, bestHabit, challenges, nextGoal) {
@@ -585,21 +565,7 @@ function getMonthlyStats(monthOf) {
     if (s > bestStreak) bestStreak = s;
   }
 
-  // Mood average
-  const moodLog = data.moodLog || {};
-  let moodSum = 0;
-  let moodCount = 0;
-  for (let d = 1; d <= daysInMonth; d++) {
-    const ds = `${monthOf}-${String(d).padStart(2, '0')}`;
-    if (ds > today) break;
-    if (moodLog[ds]) {
-      moodSum += moodLog[ds].level;
-      moodCount++;
-    }
-  }
-  const avgMood = moodCount > 0 ? (moodSum / moodCount).toFixed(1) : null;
-
-  return { completionRate, bestStreak, totalGraceUsed, avgMood, totalChecked, totalPossible };
+  return { completionRate, bestStreak, totalGraceUsed, totalChecked, totalPossible };
 }
 
 // --- Import / Export ---
@@ -617,7 +583,6 @@ function importData(jsonString) {
     habits: data.habits,
     reflections: data.reflections,
     monthlyReviews: data.monthlyReviews || [],
-    moodLog: data.moodLog || {},
     settings: { ...DEFAULT_DATA.settings, ...data.settings }
   });
 }
@@ -706,7 +671,6 @@ export {
   getScheduledToday, isScheduledOn, getWeeklyProgress,
   getGraceDaysUsed, getGraceDaysRemaining, getStackParent,
   addReflection, updateReflection, getReflections, getReflectionForCurrentWeek,
-  getMoodLog, setMood, getMoodForDate,
   addMonthlyReview, updateMonthlyReview, getMonthlyReviews, getMonthlyReviewFor, getCurrentMonth, getMonthlyStats,
   exportData, importData, resetData, getStats,
   getSettings, updateSettings, getCategories,
