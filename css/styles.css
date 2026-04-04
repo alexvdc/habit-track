@@ -616,28 +616,6 @@ details[open] .tl-summary::before { transform: rotate(90deg); }
 .card-stack { font-size: 12px; color: var(--primary-dark); display: flex; align-items: center; gap: 4px; margin: -4px 0 6px; padding-left: 18px; }
 .card-stack .i { color: var(--primary); }
 
-/* ============= MOOD WIDGET ============= */
-.mood-widget { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 18px; margin-bottom: 20px; flex-wrap: wrap; }
-.mood-label { font-size: 14px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
-.mood-emojis { display: flex; gap: 6px; flex-wrap: wrap; }
-.mood-btn { width: 44px; height: 44px; border: 2px solid var(--border); border-radius: 50%; background: var(--surface); font-size: 20px; cursor: pointer; transition: all 150ms ease; display: flex; align-items: center; justify-content: center; padding: 0; }
-.mood-btn:hover { border-color: var(--primary-light); transform: scale(1.1); }
-.mood-btn.active { border-color: var(--primary); background: var(--primary-100); transform: scale(1.15); box-shadow: 0 2px 8px rgba(13,148,136,0.15); }
-.mood-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-.mood-detail { width: 100%; margin-top: 4px; animation: fade-in 150ms ease; }
-.mood-note-input { width: 100%; padding: 8px 14px; border: 1.5px solid var(--border); border-radius: var(--radius); font-family: var(--font); font-size: 13px; color: var(--text); background: var(--surface-alt); min-height: 40px; transition: border-color 150ms ease; }
-.mood-note-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(13,148,136,0.1); }
-.mood-note-input::placeholder { color: var(--text-muted); font-style: italic; }
-
-/* ============= MOOD CHART (dashboard) ============= */
-.mood-chart { display: flex; gap: 4px; align-items: flex-end; height: 120px; padding: 8px 0; }
-.mood-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.mood-bar-emoji { font-size: 12px; height: 18px; }
-.mood-bar-track { width: 100%; max-width: 24px; height: 60px; background: var(--surface-alt); border-radius: 4px; position: relative; overflow: hidden; display: flex; align-items: flex-end; }
-.mood-bar-fill { width: 100%; border-radius: 4px; transition: height 300ms ease; min-height: 2px; }
-.mood-bar-day { font-size: 10px; color: var(--text-muted); font-weight: 600; }
-.mood-avg { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-top: 12px; text-align: center; }
-
 /* ============= MONTHLY STATS ============= */
 .monthly-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
 .monthly-stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; }
@@ -842,12 +820,6 @@ details[open] .tl-summary::before { transform: rotate(90deg); }
   .modal-overlay { align-items: flex-end; }
   .modal { border-radius: var(--radius-xl) var(--radius-xl) 0 0; width: 100%; max-width: 100%; max-height: 80vh; max-height: 80dvh; padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px)); animation: modal-in 250ms ease; }
   .modal .field textarea { min-height: 72px; }
-
-  /* Mood widget compact */
-  .mood-widget { padding: 10px 14px; gap: 8px; }
-  .mood-label { font-size: 13px; }
-  .mood-btn { width: 38px; height: 38px; font-size: 18px; }
-  .mood-note-input { font-size: 13px; padding: 8px 12px; }
 
   /* Monthly stats compact */
   .monthly-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
