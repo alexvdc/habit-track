@@ -1,6 +1,6 @@
 // js/pages/dashboard.js — V2 Dashboard with stat cards, chart, progress, tips
 
-import { getStats, getHabitsByZone, getCurrentStreak, getWeeklyProgress, todayISO, getMoodLog } from '../store.js';
+import { getStats, getHabitsByZone, getCurrentStreak, getWeeklyProgress, todayISO } from '../store.js';
 import { barChart } from '../components/chart.js';
 import { icon } from '../components/icons.js';
 import { escapeHTML, formatDateFR } from '../utils.js';
@@ -98,41 +98,6 @@ export function render(container) {
 
   const quote = getDailyQuote();
 
-  // Mood chart (14 days)
-  const moodLog = getMoodLog();
-  const moodData = stats.last30.slice(-14).map(d => ({
-    date: d.date,
-    level: moodLog[d.date]?.level || 0
-  }));
-  const moodFilled = moodData.filter(d => d.level > 0);
-  const avgMood = moodFilled.length > 0
-    ? (moodFilled.reduce((s, d) => s + d.level, 0) / moodFilled.length).toFixed(1)
-    : null;
-
-  const MOOD_EMOJIS = ['', '\u{1F634}', '\u{1F615}', '\u{1F610}', '\u{1F642}', '\u{1F525}'];
-  const MOOD_COLORS = ['', 'var(--past)', 'var(--warning)', 'var(--text-muted)', 'var(--primary)', 'var(--accent)'];
-
-  let moodChartHTML = '';
-  if (moodFilled.length > 0) {
-    moodChartHTML = `
-      <div class="panel">
-        <h2>${icon('star', 'i-sm')} \u00c9nergie \u2014 14 derniers jours</h2>
-        <div class="mood-chart">
-          ${moodData.map(d => {
-            const pct = d.level > 0 ? (d.level / 5) * 100 : 0;
-            const emoji = d.level > 0 ? MOOD_EMOJIS[d.level] : '';
-            const dayLabel = new Date(d.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short' }).charAt(0).toUpperCase();
-            return `<div class="mood-bar-col">
-              <span class="mood-bar-emoji">${emoji}</span>
-              <div class="mood-bar-track"><div class="mood-bar-fill" style="height:${pct}%;background:${d.level > 0 ? MOOD_COLORS[d.level] : 'transparent'}"></div></div>
-              <span class="mood-bar-day">${dayLabel}</span>
-            </div>`;
-          }).join('')}
-        </div>
-        ${avgMood ? `<div class="mood-avg">Moyenne : ${MOOD_EMOJIS[Math.round(parseFloat(avgMood))]} ${avgMood}/5</div>` : ''}
-      </div>`;
-  }
-
   container.innerHTML = `
     <div class="page-header">
       <h1>Dashboard</h1>
@@ -197,7 +162,6 @@ export function render(container) {
             <ul class="mini-list">${upcomingHTML}</ul>
           </div>
         ` : ''}
-        ${moodChartHTML}
         ${tipHTML}
         <div class="panel panel--quote">
           <div class="quote-head">${icon('star', 'i-sm')} Citation du jour</div>
