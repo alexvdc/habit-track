@@ -1,6 +1,6 @@
 // js/pages/board.js — Board with zones, search, filters, modal, drag reorder
 
-import { getHabitsByZone, addHabit, updateHabit, getCategories, moveHabit, reorderHabit, loadData, todayISO, getMoodForDate, setMood } from '../store.js';
+import { getHabitsByZone, addHabit, updateHabit, getCategories, moveHabit, reorderHabit, loadData, todayISO } from '../store.js';
 import { createHabitCard } from '../components/habit-card.js';
 import { icon } from '../components/icons.js';
 import { showModal } from '../components/modal.js';
@@ -19,31 +19,10 @@ function normalize(str) {
 export function render(container) {
   const categories = getCategories();
 
-  const MOODS = [
-    { level: 1, emoji: '\u{1F634}', label: 'Fatigu\u00e9' },
-    { level: 2, emoji: '\u{1F615}', label: 'Moyen' },
-    { level: 3, emoji: '\u{1F610}', label: 'Neutre' },
-    { level: 4, emoji: '\u{1F642}', label: 'Bien' },
-    { level: 5, emoji: '\u{1F525}', label: 'En feu' },
-  ];
-  const todayMood = getMoodForDate(todayISO());
-
   container.innerHTML = `
     <div class="page-header">
       <h1>Tableau</h1>
       <p>Organise tes habitudes entre Pass\u00e9, Pr\u00e9sent et Futur</p>
-    </div>
-    <div class="mood-widget" id="mood-widget">
-      <span class="mood-label">Mon \u00e9nergie :</span>
-      <div class="mood-emojis" role="radiogroup" aria-label="Niveau d'\u00e9nergie">
-        ${MOODS.map(m => {
-          const isActive = todayMood && todayMood.level === m.level;
-          return `<button class="mood-btn${isActive ? ' active' : ''}" data-level="${m.level}" role="radio" aria-checked="${isActive}" aria-label="${m.label}" title="${m.label}">${m.emoji}</button>`;
-        }).join('')}
-      </div>
-      <div class="mood-detail" id="mood-detail" style="display:${todayMood && todayMood.note ? '' : 'none'}">
-        <input type="text" class="mood-note-input" id="mood-note" placeholder="Un mot sur ta journ\u00e9e ? (optionnel)" maxlength="100" aria-label="Note d'humeur" value="${todayMood && todayMood.note ? todayMood.note.replace(/"/g, '&quot;') : ''}">
-      </div>
     </div>
     <div class="board-toolbar">
       <div class="search-wrap">
@@ -292,55 +271,6 @@ export function render(container) {
 
   refresh();
 
-  // --- Mood widget ---
-  const moodWidget = container.querySelector('#mood-widget');
-  if (moodWidget) {
-    const moodDetail = container.querySelector('#mood-detail');
-    const moodNote = container.querySelector('#mood-note');
-
-    moodWidget.querySelectorAll('.mood-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const level = parseInt(btn.dataset.level, 10);
-        const currentMood = getMoodForDate(todayISO());
-        const clickedAlreadyActive = currentMood && currentMood.level === level;
-
-        // Toggle detail panel if clicking active emoji
-        if (clickedAlreadyActive) {
-          const isOpen = moodDetail.style.display !== 'none';
-          moodDetail.style.display = isOpen ? 'none' : '';
-          if (!isOpen) moodNote.focus();
-          return;
-        }
-
-        // Set mood
-        moodWidget.querySelectorAll('.mood-btn').forEach(b => {
-          b.classList.remove('active');
-          b.setAttribute('aria-checked', 'false');
-        });
-        btn.classList.add('active');
-        btn.setAttribute('aria-checked', 'true');
-        setMood(todayISO(), level, moodNote.value.trim());
-        moodDetail.style.display = '';
-        moodNote.focus();
-      });
-    });
-
-    // Auto-save note on blur
-    if (moodNote) {
-      moodNote.addEventListener('blur', () => {
-        const currentMood = getMoodForDate(todayISO());
-        if (currentMood) {
-          setMood(todayISO(), currentMood.level, moodNote.value.trim());
-        }
-      });
-      moodNote.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          moodNote.blur();
-        }
-      });
-    }
-  }
 }
 
 function _getDragAfterElement(container, y) {
