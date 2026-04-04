@@ -19,10 +19,9 @@ Les habitudes migrent d'une zone a l'autre au fil du temps. Une habitude Future 
 - **Suivi de streaks** : voir combien de jours consecutifs on tient une habitude
 - **Grace days** : jours de grace configurables par habitude (0-4/mois) pour ne pas casser un streak sur un oubli
 - **Habit stacking** : chainer ses habitudes presentes entre elles (ex : mediter apres le cafe)
-- **Check-in emotionnel** : noter son energie du jour (5 niveaux) avec une note optionnelle
-- **Dashboard** : statistiques, graphique des 30 derniers jours, taux de reussite, courbe d'energie
+- **Dashboard** : statistiques, graphique des 30 derniers jours, taux de reussite
 - **Reflexion hebdomadaire** : journal structure pour faire le point chaque semaine
-- **Bilan mensuel** : stats du mois (completion, streaks, grace days, energie) + 3 questions coaching
+- **Bilan mensuel** : stats du mois (completion, streaks, grace days) + 3 questions coaching
 - **Heatmap 90 jours** : vue calendrier par habitude avec coloration des grace days
 - **Drag & drop** : reorganiser et deplacer ses habitudes entre zones
 - **Frequences personnalisees** : quotidien, jours specifiques, ou X fois par semaine
@@ -73,8 +72,8 @@ habit-track/
 │   │   ├── celebration.js  # Animation confettis (milestones)
 │   │   └── notifications.js # Rappels push
 │   └── pages/
-│       ├── board.js        # Tableau Passe/Present/Futur + mood widget
-│       ├── dashboard.js    # Stats, graphiques & courbe d'energie
+│       ├── board.js        # Tableau Passe/Present/Futur
+│       ├── dashboard.js    # Stats et graphiques
 │       ├── weekly.js       # Reflexion hebdomadaire
 │       ├── monthly.js      # Bilan mensuel + stats
 │       └── settings.js     # Themes, import/export, notifications
