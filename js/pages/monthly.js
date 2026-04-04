@@ -10,8 +10,6 @@ const MONTH_NAMES = [
   'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
 ];
 
-const MOOD_EMOJIS = ['', '\u{1F634}', '\u{1F615}', '\u{1F610}', '\u{1F642}', '\u{1F525}'];
-
 function formatMonth(monthOf) {
   const [y, m] = monthOf.split('-').map(Number);
   return `${MONTH_NAMES[m - 1]} ${y}`;
@@ -62,10 +60,6 @@ export function render(container, monthOffset = 0) {
         <div class="monthly-stat">
           <span class="monthly-stat-val">${stats.totalGraceUsed}</span>
           <span class="monthly-stat-lbl">Grace days utilis\u00e9s</span>
-        </div>
-        <div class="monthly-stat">
-          <span class="monthly-stat-val">${stats.avgMood ? `${MOOD_EMOJIS[Math.round(stats.avgMood)]} ${stats.avgMood}` : '\u2014'}</span>
-          <span class="monthly-stat-lbl">\u00c9nergie moyenne</span>
         </div>
       </div>
 
