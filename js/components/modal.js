@@ -59,6 +59,7 @@ export function showModal(options) {
 
     overlay.innerHTML = `
       <div class="modal">
+        <div class="modal-handle" aria-hidden="true"></div>
         <h3>${title}</h3>
         <form id="modal-form">${fieldsHTML}
           <div class="modal-foot">
@@ -70,6 +71,46 @@ export function showModal(options) {
     `;
 
     document.body.appendChild(overlay);
+
+    // Swipe-to-dismiss (mobile only)
+    const modalEl = overlay.querySelector('.modal');
+    let touchStartY = 0;
+    let isDragging = false;
+
+    overlay.addEventListener('touchstart', (e) => {
+      touchStartY = e.touches[0].clientY;
+      isDragging = false;
+    }, { passive: true });
+
+    overlay.addEventListener('touchmove', (e) => {
+      const deltaY = e.touches[0].clientY - touchStartY;
+      if (deltaY > 0 && modalEl.scrollTop <= 0) {
+        isDragging = true;
+        modalEl.style.transform = `translateY(${deltaY}px)`;
+        modalEl.style.transition = 'none';
+        overlay.style.background = `rgba(15,23,42,${Math.max(0, 0.45 - deltaY / 600)})`;
+      }
+    }, { passive: true });
+
+    overlay.addEventListener('touchend', (e) => {
+      if (!isDragging) return;
+      const deltaY = e.changedTouches[0].clientY - touchStartY;
+      if (deltaY > 100) {
+        modalEl.style.transition = 'transform 200ms ease';
+        modalEl.style.transform = 'translateY(100%)';
+        overlay.style.transition = 'opacity 200ms ease';
+        overlay.style.opacity = '0';
+        setTimeout(() => close(null), 200);
+      } else {
+        modalEl.style.transition = 'transform 200ms ease';
+        modalEl.style.transform = '';
+        overlay.style.background = '';
+        setTimeout(() => {
+          modalEl.style.transition = '';
+        }, 200);
+      }
+      isDragging = false;
+    });
 
     // Wire up frequency selectors
     for (const f of fields) {
