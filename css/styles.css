@@ -641,6 +641,19 @@ details[open] .tl-summary::before { transform: rotate(90deg); }
 /* Zone tabs — hidden by default, shown on mobile */
 .board-tabs { display: none; }
 .modal-handle { display: none; }
+.zone-dots { display: none; }
+
+/* Zone slide animations (mobile tab switching) */
+@keyframes zone-slide-from-right {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes zone-slide-from-left {
+  from { opacity: 0; transform: translateX(-40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.zone--enter-right { animation: zone-slide-from-right 220ms ease; }
+.zone--enter-left  { animation: zone-slide-from-left  220ms ease; }
 
 @media (max-width: 768px) {
   :root { --sidebar-w: 0px; }
@@ -760,6 +773,27 @@ details[open] .tl-summary::before { transform: rotate(90deg); }
   }
 
   /* Compact board zones */
+  /* Pagination dots */
+  .zone-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .zone-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: all 200ms ease;
+    flex-shrink: 0;
+  }
+  .zone-dot--active {
+    background: var(--primary);
+    width: 18px;
+    border-radius: 3px;
+  }
+
   .board { grid-template-columns: 1fr; gap: 12px; }
   .board .zone--present { grid-column: auto; }
   .zone { display: none; }

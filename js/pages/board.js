@@ -56,6 +56,9 @@ export function render(container) {
         </button>
       `).join('')}
     </div>
+    <div class="zone-dots" aria-hidden="true">
+      ${ZONES.map(z => `<span class="zone-dot${z.id === 'present' ? ' zone-dot--active' : ''}" data-zone-dot="${z.id}"></span>`).join('')}
+    </div>
 
     <div class="board">
       ${ZONES.map(z => `
@@ -393,31 +396,55 @@ export function render(container) {
   // --- Mobile zone tabs ---
   const tabs = container.querySelectorAll('.board-tab');
 
-  function switchTab(zoneId) {
+  const zoneIds = ZONES.map(z => z.id);
+
+  function switchTab(zoneId, direction = null) {
     tabs.forEach(t => {
       const isActive = t.dataset.zone === zoneId;
       t.classList.toggle('board-tab--active', isActive);
       t.setAttribute('aria-selected', String(isActive));
     });
+    // Update pagination dots
+    container.querySelectorAll('.zone-dot').forEach(dot => {
+      dot.classList.toggle('zone-dot--active', dot.dataset.zoneDot === zoneId);
+    });
+    // Animate zone entrance
     container.querySelectorAll('.zone').forEach(z => {
-      z.classList.toggle('zone--tab-active', z.dataset.zonePanel === zoneId);
+      const willBeActive = z.dataset.zonePanel === zoneId;
+      z.classList.toggle('zone--tab-active', willBeActive);
+      if (willBeActive && direction) {
+        z.classList.remove('zone--enter-left', 'zone--enter-right');
+        void z.offsetWidth; // force reflow to restart animation
+        z.classList.add(direction === 'right' ? 'zone--enter-right' : 'zone--enter-left');
+      }
     });
   }
 
+  function getDirection(fromZoneId, toZoneId) {
+    const fromIdx = zoneIds.indexOf(fromZoneId);
+    const toIdx = zoneIds.indexOf(toZoneId);
+    if (toIdx > fromIdx) return 'right';
+    if (toIdx < fromIdx) return 'left';
+    return null;
+  }
+
   tabs.forEach(tab => {
-    tab.addEventListener('click', () => switchTab(tab.dataset.zone));
+    tab.addEventListener('click', () => {
+      const currentActive = container.querySelector('.board-tab--active');
+      const direction = getDirection(currentActive?.dataset.zone, tab.dataset.zone);
+      switchTab(tab.dataset.zone, direction);
+    });
 
     // Navigation clavier Arrow Left / Right (pattern ARIA tablist)
     tab.addEventListener('keydown', (e) => {
-      const zoneIds = ZONES.map(z => z.id);
       const idx = zoneIds.indexOf(tab.dataset.zone);
       if (e.key === 'ArrowRight' && idx < zoneIds.length - 1) {
         e.preventDefault();
-        switchTab(zoneIds[idx + 1]);
+        switchTab(zoneIds[idx + 1], 'right');
         container.querySelector(`.board-tab[data-zone="${zoneIds[idx + 1]}"]`)?.focus();
       } else if (e.key === 'ArrowLeft' && idx > 0) {
         e.preventDefault();
-        switchTab(zoneIds[idx - 1]);
+        switchTab(zoneIds[idx - 1], 'left');
         container.querySelector(`.board-tab[data-zone="${zoneIds[idx - 1]}"]`)?.focus();
       }
     });
@@ -437,18 +464,17 @@ export function render(container) {
     const deltaX = e.changedTouches[0].clientX - swipeStartX;
     const deltaY = e.changedTouches[0].clientY - swipeStartY;
 
-    // Swipe horizontal significatif (>50px) et plus horizontal que vertical
-    if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+    // Swipe horizontal significatif (>70px) et plus horizontal que vertical
+    if (Math.abs(deltaX) < 70 || Math.abs(deltaX) < Math.abs(deltaY)) return;
 
-    const zoneIds = ZONES.map(z => z.id);
     const activeTab = container.querySelector('.board-tab--active');
     const currentIdx = zoneIds.indexOf(activeTab?.dataset.zone);
     if (currentIdx === -1) return;
 
     if (deltaX < 0 && currentIdx < zoneIds.length - 1) {
-      switchTab(zoneIds[currentIdx + 1]);
+      switchTab(zoneIds[currentIdx + 1], 'right');
     } else if (deltaX > 0 && currentIdx > 0) {
-      switchTab(zoneIds[currentIdx - 1]);
+      switchTab(zoneIds[currentIdx - 1], 'left');
     }
   }, { passive: true });
 
