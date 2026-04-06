@@ -288,6 +288,9 @@ export function createHabitCard(habit, onUpdate, index = 0) {
         };
 
         menu.addEventListener('keydown', handleMenuKeys);
+        const handleScroll = () => closeMenu();
+        window.addEventListener('scroll', handleScroll, { once: true, passive: true });
+        document.querySelector('.main-wrap')?.addEventListener('scroll', handleScroll, { once: true, passive: true });
         setTimeout(() => document.addEventListener('click', handleOutsideClick, true), 0);
       }
       return;

@@ -886,6 +886,10 @@ details[open] .tl-summary::before { transform: rotate(90deg); }
   .monthly-stat { padding: 12px; }
   .monthly-stat-val { font-size: 18px; }
 
+  /* Hide page subtitle on mobile */
+  .page-header p { display: none; }
+  .page-header { margin-bottom: 16px; }
+
   /* Shift toasts above bottom nav */
   .toast-container { bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
 }
