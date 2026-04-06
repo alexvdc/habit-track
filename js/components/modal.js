@@ -123,6 +123,34 @@ export function showModal(options) {
     const firstInput = form.querySelector('input, select, textarea');
     if (firstInput) firstInput.focus();
 
+    // Validation on-blur pour les champs requis
+    for (const f of fields) {
+      if (f.required && f.type !== 'frequency') {
+        const el = form.elements[f.name];
+        if (el) {
+          el.addEventListener('blur', () => {
+            el.classList.remove('field-error');
+            const existingMsg = el.parentElement.querySelector('.error-msg');
+            if (existingMsg) existingMsg.remove();
+            if (!el.value.trim()) {
+              el.classList.add('field-error');
+              const msg = document.createElement('div');
+              msg.className = 'error-msg';
+              msg.textContent = 'Ce champ est requis';
+              el.parentElement.appendChild(msg);
+            }
+          });
+          el.addEventListener('input', () => {
+            if (el.value.trim()) {
+              el.classList.remove('field-error');
+              const existingMsg = el.parentElement.querySelector('.error-msg');
+              if (existingMsg) existingMsg.remove();
+            }
+          });
+        }
+      }
+    }
+
     // Focus trap: keep Tab within the modal
     overlay.addEventListener('keydown', (e) => {
       if (e.key === 'Tab') {
