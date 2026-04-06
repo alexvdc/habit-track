@@ -98,10 +98,14 @@ export function createHabitCard(habit, onUpdate, index = 0) {
     const pct = Math.min(Math.round((streak / streakTarget) * 100), 100);
     const isMilestone = isWeekly ? [2, 4, 8, 12].includes(streak) : [7, 14, 21, 30].includes(streak);
     const disabledRing = !isScheduled && freq.type === 'specific';
+    const streakMetaParts = [weekProgressHTML, graceBadgeHTML].filter(Boolean);
+    const streakMetaHTML = streakMetaParts.length
+      ? `<div class="streak-meta">${streakMetaParts.join('<span class="streak-sep"> · </span>')}</div>`
+      : '';
     bodyHTML = `
       ${dayDotsHTML}
       <div class="streak-row">
-        <span class="streak-label">${streak > 0 ? icon('bolt', 'i-sm') : ''}${streak}${streakUnit}${weekProgressHTML ? ` <span class="streak-sep">·</span> ${weekProgressHTML}` : ''}${graceBadgeHTML ? ` <span class="streak-sep">·</span> ${graceBadgeHTML}` : ''}</span>
+        <span class="streak-label">${streak > 0 ? icon('bolt', 'i-sm') : ''}${streak}${streakUnit}</span>
         <div class="streak-track"><div class="streak-fill${isMilestone ? ' milestone' : ''}" style="width:${pct}%"></div></div>
         <span class="streak-target">${streakTarget}${streakUnit}</span>
         <button class="check-ring ${isChecked ? 'done' : ''}${disabledRing ? ' disabled' : ''}" data-action="toggle" aria-label="${disabledRing ? 'Non pr\u00e9vu aujourd\'hui \u2014 pas de check-in disponible' : (isChecked ? 'D\u00e9cocher' : 'Valider')}"${disabledRing ? ' aria-disabled="true"' : ''}>
@@ -109,7 +113,8 @@ export function createHabitCard(habit, onUpdate, index = 0) {
             <polyline points="20 6 9 17 4 12"/>
           </svg>
         </button>
-      </div>`;
+      </div>
+      ${streakMetaHTML}`;
     if (habit.metric) {
       const metricVal = (habit.metricLog || {})[todayISO()];
       bodyHTML += `<div class="card-metric">${metricVal != null ? `<span class="card-metric-val">${escapeHTML(String(metricVal))}</span>` : '<span class="card-metric-val card-metric-val--empty">\u2014</span>'} <span class="card-metric-label">${escapeHTML(habit.metric)}</span></div>`;

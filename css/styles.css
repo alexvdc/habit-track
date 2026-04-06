@@ -498,8 +498,11 @@ details[open] .tl-summary::before { transform: rotate(90deg); }
 .freq-dot.today { box-shadow: 0 0 0 2px var(--primary); }
 
 /* ============= WEEK PROGRESS ============= */
-.week-progress { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-left: 4px; }
+.week-progress { font-size: 11px; font-weight: 600; color: var(--text-muted); }
 .week-progress--bonus { color: var(--warning); }
+
+/* ============= STREAK META (week progress + grace badge) ============= */
+.streak-meta { display: flex; align-items: center; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
 
 /* ============= DISABLED CHECK RING ============= */
 .check-ring.disabled { opacity: 0.35; cursor: default; border-style: dashed; }
@@ -609,7 +612,7 @@ details[open] .tl-summary::before { transform: rotate(90deg); }
 }
 
 /* ============= GRACE DAYS ============= */
-.grace-badge { font-size: 11px; font-weight: 600; color: var(--warning); display: inline-flex; align-items: center; gap: 3px; margin-left: 4px; }
+.grace-badge { font-size: 11px; font-weight: 600; color: var(--warning); display: inline-flex; align-items: center; gap: 3px; }
 .grace-badge .i { color: var(--warning); }
 .heatmap-grace { background: var(--warning); opacity: 0.5; }
 
@@ -782,6 +785,7 @@ details[open] .tl-summary::before { transform: rotate(90deg); }
   .streak-row { gap: 6px; }
   .streak-label { font-size: 12px; }
   .streak-target { font-size: 11px; }
+  .streak-meta { margin-top: 4px; gap: 4px; }
   .check-ring { width: 48px; height: 48px; }
   .check-ring svg { width: 22px; height: 22px; }
   .card-actions { display: none; }
