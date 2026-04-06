@@ -32,7 +32,7 @@ export function createHabitCard(habit, onUpdate, index = 0) {
     card.classList.remove('dragging');
   });
   card.classList.add('card-stagger');
-  card.style.animationDelay = `${index * 50}ms`;
+  card.style.animationDelay = `${Math.min(index * 50, 300)}ms`;
 
   const isChecked = habit.checkIns.includes(todayISO());
   const zoneIdx = ZONES.indexOf(habit.zone);
@@ -245,12 +245,16 @@ export function createHabitCard(habit, onUpdate, index = 0) {
       return;
     } else if (action === 'menu') {
       const menu = card.querySelector('.card-menu');
-      const isOpen = menu.classList.toggle('open');
+      const isOpen = !menu.classList.contains('open');
       btn.setAttribute('aria-expanded', String(isOpen));
-      if (isOpen) {
-        // Auto-placement: open upward if menu would be hidden behind bottom nav
+      if (!isOpen) {
+        menu.classList.remove('open');
+      } else {
+        // Auto-placement: calculate position BEFORE revealing to avoid flash
+        menu.style.visibility = 'hidden';
         menu.style.top = `${btn.offsetTop}px`;
         menu.style.bottom = '';
+        menu.classList.add('open');
         requestAnimationFrame(() => {
           const menuRect = menu.getBoundingClientRect();
           const bottomNavHeight = window.innerWidth <= 768 ? 70 : 0;
@@ -258,6 +262,7 @@ export function createHabitCard(habit, onUpdate, index = 0) {
             const overflow = menuRect.bottom - (window.innerHeight - bottomNavHeight);
             menu.style.top = `${btn.offsetTop - overflow}px`;
           }
+          menu.style.visibility = '';
         });
 
         // Focus first menu item
@@ -310,6 +315,7 @@ export function createHabitCard(habit, onUpdate, index = 0) {
       if (disabledRing && !isChecked) { showToast('Non prévu aujourd\'hui'); return; }
       const wasChecked = habit.checkIns.includes(todayISO());
       toggleCheckIn(habit.id);
+      if (!wasChecked && navigator.vibrate) navigator.vibrate(50);
       const ring = card.querySelector('.check-ring');
       if (ring) {
         ring.classList.remove('bounce');
