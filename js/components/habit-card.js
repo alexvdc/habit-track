@@ -68,7 +68,7 @@ export function createHabitCard(habit, onUpdate, index = 0) {
   if (freq.type !== 'daily' && habit.zone === 'present') {
     const wp = getWeeklyProgress(habit);
     const isBonus = wp.done > wp.target;
-    weekProgressHTML = `<span class="week-progress${isBonus ? ' week-progress--bonus' : ''}">${wp.done}/${wp.target} cette sem.${isBonus ? ' \u2B50' : ''}</span>`;
+    weekProgressHTML = `<span class="week-progress${isBonus ? ' week-progress--bonus' : ''}">${wp.done}/${wp.target} cette sem.${isBonus ? ' ' + icon('star', 'i-sm') : ''}</span>`;
   }
 
   // --- Grace days badge ---
