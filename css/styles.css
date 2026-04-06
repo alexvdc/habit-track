@@ -893,4 +893,13 @@ details[open] .tl-summary::before { transform: rotate(90deg); }
 
   /* Shift toasts above bottom nav */
   .toast-container { bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
+
+  /* Touch drag-and-drop */
+  .habit-card.touch-dragging {
+    opacity: 0.85;
+    transform: scale(1.03);
+    box-shadow: var(--shadow-lg);
+    z-index: 20;
+    pointer-events: none;
+  }
 }

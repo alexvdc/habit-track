@@ -121,9 +121,100 @@ export function render(container) {
         habits.forEach((habit, i) => {
           cardsEl.appendChild(createHabitCard(habit, () => render(container), i));
         });
+        attachTouchReorder(cardsEl);
       }
     }
     updateTabCounts();
+  }
+
+  function attachTouchReorder(cardsEl) {
+    if (window.innerWidth > 768) return;
+
+    let dragCard = null;
+    let longPressTimer = null;
+    let startY = 0;
+    let lastY = 0;
+    let placeholder = null;
+
+    cardsEl.addEventListener('touchstart', (e) => {
+      const card = e.target.closest('.habit-card');
+      if (!card) return;
+
+      startY = e.touches[0].clientY;
+
+      longPressTimer = setTimeout(() => {
+        dragCard = card;
+        card.classList.add('touch-dragging');
+
+        placeholder = document.createElement('div');
+        placeholder.className = 'reorder-line';
+        placeholder.style.height = `${card.offsetHeight}px`;
+        placeholder.style.opacity = '0.3';
+        card.parentNode.insertBefore(placeholder, card.nextSibling);
+
+        if (navigator.vibrate) navigator.vibrate(30);
+      }, 400);
+    }, { passive: true });
+
+    cardsEl.addEventListener('touchmove', (e) => {
+      if (!longPressTimer && !dragCard) return;
+
+      const deltaY = Math.abs(e.touches[0].clientY - startY);
+      if (deltaY > 8 && !dragCard) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+        return;
+      }
+      if (!dragCard) return;
+
+      lastY = e.touches[0].clientY;
+
+      const cards = [...cardsEl.querySelectorAll('.habit-card:not(.touch-dragging)')];
+      const targetCard = cards.find(c => {
+        const rect = c.getBoundingClientRect();
+        return lastY >= rect.top && lastY <= rect.bottom;
+      });
+
+      if (targetCard && placeholder) {
+        const rect = targetCard.getBoundingClientRect();
+        const midpoint = rect.top + rect.height / 2;
+        if (lastY < midpoint) {
+          cardsEl.insertBefore(placeholder, targetCard);
+        } else {
+          cardsEl.insertBefore(placeholder, targetCard.nextSibling);
+        }
+      }
+    }, { passive: true });
+
+    cardsEl.addEventListener('touchend', () => {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+
+      if (!dragCard) return;
+
+      let newIndex = cardsEl.querySelectorAll('.habit-card:not(.touch-dragging)').length;
+      if (placeholder) {
+        const placeholderIdx = [...cardsEl.children].indexOf(placeholder);
+        newIndex = [...cardsEl.children]
+          .slice(0, placeholderIdx)
+          .filter(el => el.classList.contains('habit-card')).length;
+      }
+
+      const habitId = dragCard.dataset.id;
+      dragCard.classList.remove('touch-dragging');
+      if (placeholder) { placeholder.remove(); placeholder = null; }
+      dragCard = null;
+
+      reorderHabit(habitId, newIndex);
+      refresh();
+    }, { passive: true });
+
+    cardsEl.addEventListener('touchcancel', () => {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+      if (dragCard) { dragCard.classList.remove('touch-dragging'); dragCard = null; }
+      if (placeholder) { placeholder.remove(); placeholder = null; }
+    }, { passive: true });
   }
 
   // Search input
