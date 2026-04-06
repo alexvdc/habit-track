@@ -805,7 +805,6 @@ details[open] .tl-summary::before { transform: rotate(90deg); }
   .card-menu {
     display: none;
     position: absolute;
-    top: 8px;
     right: 8px;
     background: var(--surface);
     border: 1px solid var(--border);
@@ -814,6 +813,7 @@ details[open] .tl-summary::before { transform: rotate(90deg); }
     z-index: 50;
     overflow: hidden;
     min-width: 160px;
+    /* top/bottom défini dynamiquement via JS */
   }
   .card-menu.open { display: flex; flex-direction: column; }
   .card-menu-item {

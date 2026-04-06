@@ -237,12 +237,26 @@ export function createHabitCard(habit, onUpdate, index = 0) {
       const isOpen = menu.classList.toggle('open');
       btn.setAttribute('aria-expanded', String(isOpen));
       if (isOpen) {
+        // Auto-placement: open upward if menu would be hidden behind bottom nav
+        menu.style.top = `${btn.offsetTop}px`;
+        menu.style.bottom = '';
+        requestAnimationFrame(() => {
+          const menuRect = menu.getBoundingClientRect();
+          const bottomNavHeight = window.innerWidth <= 768 ? 70 : 0;
+          if (menuRect.bottom > window.innerHeight - bottomNavHeight) {
+            const overflow = menuRect.bottom - (window.innerHeight - bottomNavHeight);
+            menu.style.top = `${btn.offsetTop - overflow}px`;
+          }
+        });
+
         // Focus first menu item
         const items = menu.querySelectorAll('.card-menu-item');
         if (items.length) items[0].focus();
 
         const closeMenu = () => {
           menu.classList.remove('open');
+          menu.style.top = '';
+          menu.style.bottom = '';
           btn.setAttribute('aria-expanded', 'false');
           document.removeEventListener('click', handleOutsideClick, true);
           menu.removeEventListener('keydown', handleMenuKeys);
