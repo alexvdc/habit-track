@@ -61,6 +61,7 @@ export function render(container, weekOffset = 0) {
               ${icon('save', 'i-sm')} ${current ? 'Mettre à jour' : 'Enregistrer'}
             </button>
           </div>
+          <div id="draft-indicator" style="font-size:12px;color:var(--text-muted);text-align:right;opacity:0;transition:opacity 300ms ease;margin-top:8px;"></div>
         </form>
       </div>
 
@@ -83,6 +84,39 @@ export function render(container, weekOffset = 0) {
       ` : ''}
     </div>
   `;
+
+  // Draft auto-save
+  const DRAFT_KEY = `weekly-draft-${monday}`;
+  const draftIndicator = container.querySelector('#draft-indicator');
+
+  if (!current) {
+    try {
+      const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}');
+      if (draft.whatWorked) container.querySelector('#w-worked').value = draft.whatWorked;
+      if (draft.whatBlocked) container.querySelector('#w-blocked').value = draft.whatBlocked;
+      if (draft.nextSteps) container.querySelector('#w-next').value = draft.nextSteps;
+    } catch (e) { /* ignore */ }
+  }
+
+  function saveDraft() {
+    if (current) return;
+    const draft = {
+      whatWorked: container.querySelector('#w-worked')?.value || '',
+      whatBlocked: container.querySelector('#w-blocked')?.value || '',
+      nextSteps: container.querySelector('#w-next')?.value || '',
+    };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    if (draftIndicator) {
+      draftIndicator.textContent = 'Brouillon sauvegardé';
+      draftIndicator.style.opacity = '1';
+      clearTimeout(draftIndicator._timeout);
+      draftIndicator._timeout = setTimeout(() => { draftIndicator.style.opacity = '0'; }, 2000);
+    }
+  }
+
+  ['#w-worked', '#w-blocked', '#w-next'].forEach(selector => {
+    container.querySelector(selector)?.addEventListener('input', saveDraft);
+  });
 
   // Week navigation
   container.querySelector('#week-prev').addEventListener('click', () => {
@@ -120,6 +154,7 @@ export function render(container, weekOffset = 0) {
     } else {
       addReflection(whatWorked, whatBlocked, nextSteps);
     }
+    localStorage.removeItem(DRAFT_KEY);
 
     showToast(`Réflexion ${current ? 'mise à jour' : 'enregistrée'}`);
     render(container, weekOffset);
