@@ -317,6 +317,35 @@ export function render(container) {
     tab.addEventListener('click', () => switchTab(tab.dataset.zone));
   });
 
+  // Swipe horizontal entre onglets (mobile)
+  const boardEl = container.querySelector('.board');
+  let swipeStartX = 0;
+  let swipeStartY = 0;
+
+  boardEl.addEventListener('touchstart', (e) => {
+    swipeStartX = e.touches[0].clientX;
+    swipeStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  boardEl.addEventListener('touchend', (e) => {
+    const deltaX = e.changedTouches[0].clientX - swipeStartX;
+    const deltaY = e.changedTouches[0].clientY - swipeStartY;
+
+    // Swipe horizontal significatif (>50px) et plus horizontal que vertical
+    if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+
+    const zoneIds = ZONES.map(z => z.id);
+    const activeTab = container.querySelector('.board-tab--active');
+    const currentIdx = zoneIds.indexOf(activeTab?.dataset.zone);
+    if (currentIdx === -1) return;
+
+    if (deltaX < 0 && currentIdx < zoneIds.length - 1) {
+      switchTab(zoneIds[currentIdx + 1]);
+    } else if (deltaX > 0 && currentIdx > 0) {
+      switchTab(zoneIds[currentIdx - 1]);
+    }
+  }, { passive: true });
+
   // Restaurer le tab actif
   if (savedTab !== 'present') {
     switchTab(savedTab);
