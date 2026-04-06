@@ -72,6 +72,12 @@ export function showModal(options) {
 
     document.body.appendChild(overlay);
 
+    // Back button support (Android / PWA)
+    history.pushState({ modal: true }, '');
+    let closedByPopstate = false;
+    const onPopState = () => { closedByPopstate = true; close(null); };
+    window.addEventListener('popstate', onPopState);
+
     // Swipe-to-dismiss (mobile only)
     const modalEl = overlay.querySelector('.modal');
     let touchStartY = 0;
@@ -166,6 +172,8 @@ export function showModal(options) {
     });
 
     function close(result) {
+      window.removeEventListener('popstate', onPopState);
+      if (!closedByPopstate && history.state?.modal) history.back();
       overlay.remove();
       if (previouslyFocused && previouslyFocused.focus) {
         previouslyFocused.focus();

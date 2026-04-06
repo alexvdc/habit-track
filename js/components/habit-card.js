@@ -212,7 +212,15 @@ export function createHabitCard(habit, onUpdate, index = 0) {
           </div>
         `;
         document.body.appendChild(overlay);
-        const closeModal = () => overlay.remove();
+        history.pushState({ modal: true }, '');
+        let closedByPopstate = false;
+        const onPopState = () => { closedByPopstate = true; closeModal(); };
+        window.addEventListener('popstate', onPopState);
+        const closeModal = () => {
+          window.removeEventListener('popstate', onPopState);
+          if (!closedByPopstate && history.state?.modal) history.back();
+          overlay.remove();
+        };
         overlay.querySelector('.notes-modal-close').addEventListener('click', closeModal);
         overlay.addEventListener('click', (ev) => { if (ev.target === overlay) closeModal(); });
         overlay.addEventListener('keydown', (ev) => {
@@ -274,7 +282,11 @@ export function createHabitCard(habit, onUpdate, index = 0) {
         const items = menu.querySelectorAll('.card-menu-item');
         if (items.length) items[0].focus();
 
+        // Back button support (Android / PWA)
+        let menuClosedByPopstate = false;
         const closeMenu = () => {
+          window.removeEventListener('popstate', onMenuPopState);
+          if (!menuClosedByPopstate && history.state?.modal) history.back();
           menu.classList.remove('open');
           menu.style.top = '';
           menu.style.bottom = '';
@@ -283,6 +295,9 @@ export function createHabitCard(habit, onUpdate, index = 0) {
           menu.removeEventListener('keydown', handleMenuKeys);
           btn.focus();
         };
+        const onMenuPopState = () => { menuClosedByPopstate = true; closeMenu(); };
+        window.addEventListener('popstate', onMenuPopState);
+        history.pushState({ modal: true }, '');
 
         const handleOutsideClick = (ev) => {
           if (!menu.contains(ev.target) && ev.target !== btn) {
