@@ -76,7 +76,7 @@ export function createHabitCard(habit, onUpdate, index = 0) {
   if (habit.zone === 'present' && (habit.graceDays ?? 2) > 0) {
     const remaining = getGraceDaysRemaining(habit);
     const total = habit.graceDays ?? 2;
-    graceBadgeHTML = `<span class="grace-badge" title="Jours de gr\u00e2ce restants ce mois">${icon('shield', 'i-sm')} ${remaining}/${total}</span>`;
+    graceBadgeHTML = `<span class="grace-badge" aria-label="${remaining} sur ${total} jours de gr\u00e2ce ce mois">${icon('shield', 'i-sm')} ${remaining}/${total}</span>`;
   }
 
   // --- Stack link ---
@@ -104,7 +104,7 @@ export function createHabitCard(habit, onUpdate, index = 0) {
         <span class="streak-label">${streak > 0 ? icon('bolt', 'i-sm') : ''}${streak}${streakUnit}${weekProgressHTML ? ` <span class="streak-sep">·</span> ${weekProgressHTML}` : ''}${graceBadgeHTML ? ` <span class="streak-sep">·</span> ${graceBadgeHTML}` : ''}</span>
         <div class="streak-track"><div class="streak-fill${isMilestone ? ' milestone' : ''}" style="width:${pct}%"></div></div>
         <span class="streak-target">${streakTarget}${streakUnit}</span>
-        <button class="check-ring ${isChecked ? 'done' : ''}${disabledRing ? ' disabled' : ''}" data-action="toggle" aria-label="${isChecked ? 'Décocher' : 'Valider'}"${disabledRing ? ' title="Non prévu aujourd\'hui"' : ''}>
+        <button class="check-ring ${isChecked ? 'done' : ''}${disabledRing ? ' disabled' : ''}" data-action="toggle" aria-label="${disabledRing ? 'Non pr\u00e9vu aujourd\'hui \u2014 pas de check-in disponible' : (isChecked ? 'D\u00e9cocher' : 'Valider')}"${disabledRing ? ' aria-disabled="true"' : ''}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${isChecked ? '3' : '2'}" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 6 9 17 4 12"/>
           </svg>
@@ -307,7 +307,7 @@ export function createHabitCard(habit, onUpdate, index = 0) {
       return;
     } else if (action === 'toggle') {
       const disabledRing = !isScheduled && freq.type === 'specific';
-      if (disabledRing && !isChecked) return; // allow unchecking but not checking on off-days
+      if (disabledRing && !isChecked) { showToast('Non prévu aujourd\'hui'); return; }
       const wasChecked = habit.checkIns.includes(todayISO());
       toggleCheckIn(habit.id);
       const ring = card.querySelector('.check-ring');
