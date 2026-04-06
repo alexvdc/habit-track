@@ -38,9 +38,23 @@ export function render(container) {
         ${categories.map(c => `<option value="${c}">${c}</option>`).join('')}
       </select>
     </div>
+
+    <!-- Mobile zone tabs (hidden on desktop) -->
+    <div class="board-tabs" role="tablist" aria-label="Zones">
+      ${ZONES.map(z => `
+        <button class="board-tab${z.id === 'present' ? ' board-tab--active' : ''}"
+                data-zone="${z.id}"
+                role="tab"
+                aria-selected="${z.id === 'present' ? 'true' : 'false'}">
+          ${z.label}
+          <span class="board-tab-count" data-tab-count="${z.id}">0</span>
+        </button>
+      `).join('')}
+    </div>
+
     <div class="board">
       ${ZONES.map(z => `
-        <div class="zone zone--${z.id}">
+        <div class="zone zone--${z.id}${z.id === 'present' ? ' zone--tab-active' : ''}" data-zone-panel="${z.id}">
           <div class="zone-head">
             <div class="zone-icon">${icon(z.iconName, 'i-lg')}</div>
             <div class="zone-info">
@@ -61,6 +75,14 @@ export function render(container) {
 
   let searchQuery = '';
   let activeCategory = 'all';
+
+  function updateTabCounts() {
+    ZONES.forEach(z => {
+      const count = getHabitsByZone(z.id).length;
+      const tabCount = container.querySelector(`[data-tab-count="${z.id}"]`);
+      if (tabCount) tabCount.textContent = count;
+    });
+  }
 
   function refresh() {
     for (const zone of ZONES) {
@@ -96,6 +118,7 @@ export function render(container) {
         });
       }
     }
+    updateTabCounts();
   }
 
   // Search input
@@ -270,6 +293,24 @@ export function render(container) {
   });
 
   refresh();
+
+  // --- Mobile zone tabs ---
+  const tabs = container.querySelectorAll('.board-tab');
+
+  function switchTab(zoneId) {
+    tabs.forEach(t => {
+      const isActive = t.dataset.zone === zoneId;
+      t.classList.toggle('board-tab--active', isActive);
+      t.setAttribute('aria-selected', String(isActive));
+    });
+    container.querySelectorAll('.zone').forEach(z => {
+      z.classList.toggle('zone--tab-active', z.dataset.zonePanel === zoneId);
+    });
+  }
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => switchTab(tab.dataset.zone));
+  });
 
 }
 
