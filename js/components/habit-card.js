@@ -210,7 +210,18 @@ export function createHabitCard(habit, onUpdate, index = 0) {
         const closeModal = () => overlay.remove();
         overlay.querySelector('.notes-modal-close').addEventListener('click', closeModal);
         overlay.addEventListener('click', (ev) => { if (ev.target === overlay) closeModal(); });
-        overlay.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') closeModal(); });
+        overlay.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Escape') { closeModal(); return; }
+          if (ev.key !== 'Tab') return;
+          const focusable = overlay.querySelectorAll('button, [href], input, [tabindex]:not([tabindex="-1"])');
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+          if (ev.shiftKey) {
+            if (document.activeElement === first) { ev.preventDefault(); last.focus(); }
+          } else {
+            if (document.activeElement === last) { ev.preventDefault(); first.focus(); }
+          }
+        });
         overlay.querySelector('.notes-modal-close').focus();
       } else {
         // Desktop: toggle popup

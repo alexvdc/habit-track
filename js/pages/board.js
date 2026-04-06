@@ -315,6 +315,21 @@ export function render(container) {
 
   tabs.forEach(tab => {
     tab.addEventListener('click', () => switchTab(tab.dataset.zone));
+
+    // Navigation clavier Arrow Left / Right (pattern ARIA tablist)
+    tab.addEventListener('keydown', (e) => {
+      const zoneIds = ZONES.map(z => z.id);
+      const idx = zoneIds.indexOf(tab.dataset.zone);
+      if (e.key === 'ArrowRight' && idx < zoneIds.length - 1) {
+        e.preventDefault();
+        switchTab(zoneIds[idx + 1]);
+        container.querySelector(`.board-tab[data-zone="${zoneIds[idx + 1]}"]`)?.focus();
+      } else if (e.key === 'ArrowLeft' && idx > 0) {
+        e.preventDefault();
+        switchTab(zoneIds[idx - 1]);
+        container.querySelector(`.board-tab[data-zone="${zoneIds[idx - 1]}"]`)?.focus();
+      }
+    });
   });
 
   // Swipe horizontal entre onglets (mobile)
