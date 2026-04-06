@@ -78,45 +78,45 @@ export function showModal(options) {
     const onPopState = () => { closedByPopstate = true; close(null); };
     window.addEventListener('popstate', onPopState);
 
-    // Swipe-to-dismiss (mobile only)
+    // Swipe-to-dismiss from handle only (works even when modal is scrolled)
     const modalEl = overlay.querySelector('.modal');
-    let touchStartY = 0;
-    let isDragging = false;
+    const modalHandle = overlay.querySelector('.modal-handle');
+    if (modalHandle) {
+      modalHandle.addEventListener('touchstart', (e) => {
+        const startY = e.touches[0].clientY;
+        let isDragging = false;
 
-    overlay.addEventListener('touchstart', (e) => {
-      touchStartY = e.touches[0].clientY;
-      isDragging = false;
-    }, { passive: true });
-
-    overlay.addEventListener('touchmove', (e) => {
-      const deltaY = e.touches[0].clientY - touchStartY;
-      if (deltaY > 0 && modalEl.scrollTop <= 0) {
-        isDragging = true;
-        modalEl.style.transform = `translateY(${deltaY}px)`;
-        modalEl.style.transition = 'none';
-        overlay.style.background = `rgba(15,23,42,${Math.max(0, 0.45 - deltaY / 600)})`;
-      }
-    }, { passive: true });
-
-    overlay.addEventListener('touchend', (e) => {
-      if (!isDragging) return;
-      const deltaY = e.changedTouches[0].clientY - touchStartY;
-      if (deltaY > 100) {
-        modalEl.style.transition = 'transform 200ms ease';
-        modalEl.style.transform = 'translateY(100%)';
-        overlay.style.transition = 'opacity 200ms ease';
-        overlay.style.opacity = '0';
-        setTimeout(() => close(null), 200);
-      } else {
-        modalEl.style.transition = 'transform 200ms ease';
-        modalEl.style.transform = '';
-        overlay.style.background = '';
-        setTimeout(() => {
-          modalEl.style.transition = '';
-        }, 200);
-      }
-      isDragging = false;
-    });
+        const onMove = (ev) => {
+          const deltaY = ev.touches[0].clientY - startY;
+          if (deltaY > 0) {
+            isDragging = true;
+            modalEl.style.transform = `translateY(${deltaY}px)`;
+            modalEl.style.transition = 'none';
+            overlay.style.background = `rgba(15,23,42,${Math.max(0, 0.45 - deltaY / 600)})`;
+          }
+        };
+        const onEnd = (ev) => {
+          document.removeEventListener('touchmove', onMove);
+          document.removeEventListener('touchend', onEnd);
+          if (!isDragging) return;
+          const deltaY = ev.changedTouches[0].clientY - startY;
+          if (deltaY > 100) {
+            modalEl.style.transition = 'transform 200ms ease';
+            modalEl.style.transform = 'translateY(100%)';
+            overlay.style.transition = 'opacity 200ms ease';
+            overlay.style.opacity = '0';
+            setTimeout(() => close(null), 200);
+          } else {
+            modalEl.style.transition = 'transform 200ms ease';
+            modalEl.style.transform = '';
+            overlay.style.background = '';
+            setTimeout(() => { modalEl.style.transition = ''; }, 200);
+          }
+        };
+        document.addEventListener('touchmove', onMove, { passive: true });
+        document.addEventListener('touchend', onEnd, { passive: true });
+      }, { passive: true });
+    }
 
     // Wire up frequency selectors
     for (const f of fields) {

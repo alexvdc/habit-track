@@ -54,9 +54,10 @@ export function renderNav(container) {
   if (bottomNav) {
     bottomNav.innerHTML = ROUTES.map(r => {
       const isActive = current === r.hash;
+      const badgeHTML = r.badge && totalHabits > 0 ? `<span class="bnav-badge">${totalHabits}</span>` : '';
       return `
         <a href="${r.hash}" class="bnav-link${isActive ? ' active' : ''}"${isActive ? ' aria-current="page"' : ''}>
-          ${icon(r.iconName)}
+          <span class="bnav-icon-wrap">${icon(r.iconName)}${badgeHTML}</span>
           <span class="bnav-label">${r.label}</span>
         </a>`;
     }).join('');
