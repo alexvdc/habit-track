@@ -172,6 +172,26 @@ export function render(container) {
     </div>
   `;
 
+  // Chart tap tooltip (mobile)
+  const chartWrap = container.querySelector('.chart-wrap');
+  if (chartWrap) {
+    const months = ['janv.','fév.','mars','avril','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+    let tooltipTimer;
+    chartWrap.addEventListener('click', (e) => {
+      const bar = e.target.closest('rect[data-date]');
+      if (!bar) return;
+      chartWrap.querySelector('.chart-tooltip')?.remove();
+      clearTimeout(tooltipTimer);
+      const [, m, d] = bar.dataset.date.split('-').map(Number);
+      const count = bar.dataset.count;
+      const tooltip = document.createElement('div');
+      tooltip.className = 'chart-tooltip';
+      tooltip.textContent = `${d} ${months[m - 1]} · ${count} check-in${count !== '1' ? 's' : ''}`;
+      chartWrap.appendChild(tooltip);
+      tooltipTimer = setTimeout(() => tooltip.remove(), 2000);
+    });
+  }
+
   // Animate stat counters
   container.querySelectorAll('.stat-val').forEach(el => {
     const text = el.textContent;

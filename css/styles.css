@@ -362,8 +362,24 @@ h3 { font-size: 0.9375rem; }
 .dash-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; }
 .panel { background: var(--surface); border-radius: var(--radius-lg); padding: 24px; border: 1px solid var(--border); }
 .panel h2 { font-size: 16px; font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
-.chart-wrap { width: 100%; overflow-x: auto; }
+.chart-wrap { width: 100%; overflow-x: auto; position: relative; }
 .chart-wrap svg { display: block; width: 100%; }
+.chart-tooltip {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1A1825;
+  color: #F1F5F9;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 10;
+  animation: fade-in 150ms ease;
+}
 .chart-bar { fill: var(--primary-200); transition: fill 150ms ease; }
 .chart-bar:hover { fill: var(--primary); }
 .chart-bar-today { fill: var(--primary); }
@@ -872,7 +888,7 @@ details[open] .tl-summary::before { transform: rotate(90deg); }
   .card-menu-item:hover { background: var(--primary-50); }
   .card-menu-item--del { color: var(--danger); }
   .card-menu-item--del:hover { background: var(--danger-light); }
-  .card-note-btn { display: none; }
+  .card-note-btn { display: flex; padding: 2px; }
   .card-notes-popup { display: none !important; }
   .card-why { font-size: 12px; margin: -4px 0 4px; padding-left: 14px; }
   .card-metric { font-size: 12px; margin-top: 4px; }
