@@ -17,6 +17,11 @@ function normalize(str) {
 }
 
 export function render(container) {
+  // Sauvegarder le scroll et le tab actif avant re-render
+  const scrollEl = document.querySelector('.main-wrap') || document.documentElement;
+  const savedScroll = scrollEl.scrollTop;
+  const savedTab = container.querySelector('.board-tab--active')?.dataset.zone || 'present';
+
   const categories = getCategories();
 
   container.innerHTML = `
@@ -310,6 +315,16 @@ export function render(container) {
 
   tabs.forEach(tab => {
     tab.addEventListener('click', () => switchTab(tab.dataset.zone));
+  });
+
+  // Restaurer le tab actif
+  if (savedTab !== 'present') {
+    switchTab(savedTab);
+  }
+
+  // Restaurer le scroll (différé pour laisser le DOM se mettre à jour)
+  requestAnimationFrame(() => {
+    scrollEl.scrollTop = savedScroll;
   });
 
 }
