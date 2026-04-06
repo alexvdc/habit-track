@@ -842,8 +842,8 @@ details[open] .tl-summary::before { transform: rotate(90deg); }
   .zone-add { padding: 10px; min-height: 44px; font-size: 13px; margin-top: 8px; }
 
   /* Frequency dots compact */
-  .freq-row { gap: 3px; margin-bottom: 6px; }
-  .freq-dot { width: 20px; height: 20px; font-size: 9px; border-radius: 4px; }
+  .freq-row { gap: 4px; margin-bottom: 6px; }
+  .freq-dot { width: 26px; height: 26px; font-size: 10px; border-radius: 5px; }
   .card-freq { font-size: 9px; padding: 1px 6px; }
   .week-progress { font-size: 10px; }
 
@@ -864,7 +864,8 @@ details[open] .tl-summary::before { transform: rotate(90deg); }
   .celebration-text { font-size: 14px; }
 
   /* Frequency selector compact */
-  .day-toggle { width: 36px; height: 36px; font-size: 12px; border-radius: 8px; }
+  .day-toggle { width: 44px; height: 44px; font-size: 13px; border-radius: 10px; }
+  .freq-sub--specific { flex-wrap: wrap; }
 
   /* Modal: bottom-sheet on mobile */
   .modal-overlay { align-items: flex-end; }
