@@ -300,6 +300,7 @@ export function createHabitCard(habit, onUpdate, index = 0) {
         history.pushState({ modal: true }, '');
 
         const handleOutsideClick = (ev) => {
+          if (document.querySelector('.modal-overlay')) return;
           if (!menu.contains(ev.target) && ev.target !== btn) {
             closeMenu();
           }
